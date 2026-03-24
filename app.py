@@ -176,30 +176,31 @@ def _check_song(song, artist, album_hint):
         return jsonify({**base, 'status': 'yes',
                         'reason': f'Rating {rating}/10 > 7: tutte le tracce ammesse.'})
 
-    # 6 ≤ rating ≤ 7 → solo i 2 maggiori singoli (6 e 7 inclusi)
-    is_single, _ = mb.is_track_a_single(rec_title, rec_artist)
-    if not is_single:
-        return jsonify({**base, 'status': 'no',
-                        'reason': (f'Rating {rating}/10 (fascia 6–7): '
-                                   'solo i 2 maggiori singoli. '
-                                   'Questo brano non è un singolo.')})
-
-    top_singles  = mb.get_top_2_singles(rec_artist, album_year=album_year)
-    top_2_titles = [s['title'].lower() for s in top_singles]
+    # 6 ≤ rating ≤ 7 → solo i singoli dell'artista (da MusicBrainz)
     from difflib import SequenceMatcher
-    song_lower = rec_title.lower()
-    in_top_2 = (song_lower in top_2_titles or
-                any(SequenceMatcher(None, song_lower, t).ratio() >= 0.82
-                    for t in top_2_titles))
+    all_singles  = mb.get_top_singles_for_artist(rec_artist, around_year=album_year)
+    single_titles = [s['title'].lower() for s in all_singles]
+    song_lower    = rec_title.lower()
 
-    if in_top_2:
-        return jsonify({**base, 'status': 'yes', 'top_2_singles': top_singles,
+    in_singles = (song_lower in single_titles or
+                  any(SequenceMatcher(None, song_lower, t).ratio() >= 0.82
+                      for t in single_titles))
+
+    if not all_singles:
+        # MusicBrainz non ha dati sui singoli: diamo il beneficio del dubbio
+        return jsonify({**base, 'status': 'yes',
                         'reason': (f'Rating {rating}/10 (fascia 6–7): '
-                                   'è uno dei 2 maggiori singoli. Ammesso.')})
-    return jsonify({**base, 'status': 'no', 'top_2_singles': top_singles,
+                                   'nessun dato singoli su MusicBrainz — ammesso per mancanza di dati.')})
+
+    top_2 = all_singles[:2]
+    if in_singles:
+        return jsonify({**base, 'status': 'yes', 'top_2_singles': top_2,
+                        'reason': (f'Rating {rating}/10 (fascia 6–7): '
+                                   'è un singolo ufficiale. Ammesso.')})
+    return jsonify({**base, 'status': 'no', 'top_2_singles': top_2,
                     'reason': (f'Rating {rating}/10 (fascia 6–7): '
-                               f'singolo non nei top 2 '
-                               f'({", ".join(s["title"] for s in top_singles) or "N/D"}).')})
+                               f'non risulta tra i singoli '
+                               f'({", ".join(s["title"] for s in top_2) or "N/D"} …).')})
 
 
 def localhost_only():
