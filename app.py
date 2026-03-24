@@ -10,7 +10,11 @@ Regole:
 from flask import Flask, render_template, request, jsonify, Response, abort
 import database as db
 import musicbrainz_api as mb
-import scraper
+try:
+    import scraper
+    _scraper_available = True
+except ImportError:
+    _scraper_available = False
 import threading
 import queue
 import logging
@@ -266,6 +270,8 @@ def scrape_page():
 def scrape_run():
     localhost_only()
     """SSE: scansione rapida (solo pagine ratings ≥7)."""
+    if not _scraper_available:
+        abort(503)
     return _sse_scrape(lambda cb: scraper.scrape_all(progress_cb=cb))
 
 
