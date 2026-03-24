@@ -153,7 +153,8 @@ def _check_song(song, artist, album_hint):
     rating     = scaruffi_match['rating']
     rec_title  = matched_rec['title']
     rec_artist = matched_rec['artist']
-    album_year = matched_rec.get('year')
+    # Usa anno MB se disponibile, altrimenti anno dal DB Scaruffi come fallback
+    album_year = matched_rec.get('year') or scaruffi_match.get('year')
 
     base = {
         'mode':            'song',
@@ -178,6 +179,9 @@ def _check_song(song, artist, album_hint):
 
     # 6 ≤ rating ≤ 7 → solo i singoli dell'artista (da MusicBrainz)
     from difflib import SequenceMatcher
+    # Invalida cache senza anno (chiave |None) se ora abbiamo l'anno
+    if album_year:
+        db.delete_mb_cache_key(f"topsingles:{rec_artist.lower()}|None")
     all_singles  = mb.get_top_singles_for_artist(rec_artist, around_year=album_year)
     single_titles = [s['title'].lower() for s in all_singles]
     song_lower    = rec_title.lower()

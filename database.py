@@ -357,6 +357,12 @@ def set_mb_cache(key, value):
         conn.commit()
 
 
+def delete_mb_cache_key(key):
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute('DELETE FROM mb_cache WHERE key = ?', (key,))
+        conn.commit()
+
+
 def get_top_albums(decade=None, min_rating=6.0, limit=20):
     """Top album per decade o globale, ordinati per rating desc."""
     with sqlite3.connect(DB_PATH) as conn:
