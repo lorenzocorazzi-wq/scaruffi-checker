@@ -510,9 +510,9 @@
       const rating = d.rating;
       let verdictCls = 'unknown', verdictTxt = 'Non in Scaruffi';
       if (inScaruffi) {
-        if (rating < 6)      { verdictCls = 'no';  verdictTxt = 'Non ammesso (< 6)'; }
-        else if (rating < 7) { verdictCls = 'yes'; verdictTxt = 'Top 2 singoli (6–<7)'; }
-        else                 { verdictCls = 'yes'; verdictTxt = 'Tutte le tracce (≥ 7)'; }
+        if (rating < 6)       { verdictCls = 'no';  verdictTxt = 'Non ammesso (< 6)'; }
+        else if (rating <= 7) { verdictCls = 'yes'; verdictTxt = 'Top 2 singoli (6–7)'; }
+        else                  { verdictCls = 'yes'; verdictTxt = 'Tutte le tracce (> 7)'; }
       }
 
       tvPanel.classList.add(inScaruffi ? 'tv-found' : 'tv-not-found');

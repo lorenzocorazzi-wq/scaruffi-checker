@@ -2,8 +2,8 @@
 Scaruffi Checker — Flask web application.
 
 Regole:
-  rating >= 7  → tutte le tracce ammesse
-  rating >= 6  → solo i 2 maggiori singoli  (6 incluso, 7 escluso)
+  rating > 7   → tutte le tracce ammesse
+  rating >= 6 e <= 7 → solo i 2 maggiori singoli  (6 e 7 inclusi)
   rating < 6   → nessuna traccia ammessa
 """
 
@@ -96,10 +96,10 @@ def _check_album_only(artist, album_query):
     rating = match['rating']
     if rating < 6:
         status = 'no';  reason = f'Rating {rating}/10 < 6 — album sotto soglia, nessuna traccia ammessa.'
-    elif rating < 7:
-        status = 'partial'; reason = f'Rating {rating}/10 (fascia 6–<7) — solo i 2 maggiori singoli.'
+    elif rating <= 7:
+        status = 'partial'; reason = f'Rating {rating}/10 (fascia 6–7) — solo i 2 maggiori singoli.'
     else:
-        status = 'yes'; reason = f'Rating {rating}/10 ≥ 7 — tutte le tracce ammesse.'
+        status = 'yes'; reason = f'Rating {rating}/10 > 7 — tutte le tracce ammesse.'
     return jsonify({
         'mode':            'album',
         'status':          status,
@@ -172,15 +172,15 @@ def _check_song(song, artist, album_hint):
         return jsonify({**base, 'status': 'no',
                         'reason': f'Rating {rating}/10 < 6: album non qualificato.'})
 
-    if rating >= 7:
+    if rating > 7:
         return jsonify({**base, 'status': 'yes',
-                        'reason': f'Rating {rating}/10 ≥ 7: tutte le tracce ammesse.'})
+                        'reason': f'Rating {rating}/10 > 7: tutte le tracce ammesse.'})
 
-    # 6 ≤ rating < 7 → solo i 2 maggiori singoli (6 incluso, 7 escluso)
+    # 6 ≤ rating ≤ 7 → solo i 2 maggiori singoli (6 e 7 inclusi)
     is_single, _ = mb.is_track_a_single(rec_title, rec_artist)
     if not is_single:
         return jsonify({**base, 'status': 'no',
-                        'reason': (f'Rating {rating}/10 (fascia 6–<7): '
+                        'reason': (f'Rating {rating}/10 (fascia 6–7): '
                                    'solo i 2 maggiori singoli. '
                                    'Questo brano non è un singolo.')})
 
@@ -194,10 +194,10 @@ def _check_song(song, artist, album_hint):
 
     if in_top_2:
         return jsonify({**base, 'status': 'yes', 'top_2_singles': top_singles,
-                        'reason': (f'Rating {rating}/10 (fascia 6–<7): '
+                        'reason': (f'Rating {rating}/10 (fascia 6–7): '
                                    'è uno dei 2 maggiori singoli. Ammesso.')})
     return jsonify({**base, 'status': 'no', 'top_2_singles': top_singles,
-                    'reason': (f'Rating {rating}/10 (fascia 6–<7): '
+                    'reason': (f'Rating {rating}/10 (fascia 6–7): '
                                f'singolo non nei top 2 '
                                f'({", ".join(s["title"] for s in top_singles) or "N/D"}).')})
 
