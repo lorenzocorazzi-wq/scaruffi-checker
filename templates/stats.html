@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#07090f">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Statistiche — Scaruffi Checker</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    /* ── Stats page — extra styles ─────────────────────────────────────── */
+
+    /* ── Page title ────────────────────────────────────────────────────── */
+    .stats-hero {
+      text-align: center;
+      padding: 48px 24px 32px;
+      position: relative;
+    }
+    .stats-hero h2 {
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, var(--gold) 0%, #fcd34d 40%, var(--gold) 70%, #b45309 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 4s linear infinite;
+      margin-bottom: 8px;
+    }
+    .stats-hero p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Wrapper ────────────────────────────────────────────────────────── */
+    .stats-main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 20px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+    }
+
+    /* ── Section headings ───────────────────────────────────────────────── */
+    .section-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── KPI cards grid ─────────────────────────────────────────────────── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 480px) {
+      .kpi-grid { grid-template-columns: 1fr; }
+    }
+
+    .kpi-card {
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: 24px 20px 20px;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: border-color var(--transition), transform var(--transition);
+    }
+    .kpi-card:hover {
+      border-color: var(--gold-dim);
+      transform: translateY(-2px);
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(245,158,11,0.04) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .kpi-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .kpi-value {
+      font-family: var(--mono);
+      font-size: clamp(2rem, 6vw, 2.8rem);
+      font-weight: 700;
+      line-height: 1;
+      color: var(--text);
+    }
+    .kpi-value.gold { color: var(--gold); }
+    .kpi-suffix {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-left: 4px;
+      font-family: var(--font);
+    }
+    .kpi-icon {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      font-size: 1.4rem;
+      opacity: 0.18;
+    }
+
+    /* ── Rating distribution ────────────────────────────────────────────── */
+    .rating-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .rating-row {
+      display: grid;
+      grid-template-columns: 52px 1fr 48px;
+      align-items: center;
+      gap: 10px;
+    }
+    .rating-row-label {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-align: right;
+    }
+    .rating-bar-track {
+      height: 22px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .rating-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      width: 0%;
+      transition: width 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .rating-bar-fill.red  { background: linear-gradient(90deg, #7f1d1d, var(--red)); }
+    .rating-bar-fill.grey { background: linear-gradient(90deg, #374151, #9ca3af); }
+    .rating-bar-fill.gold { background: linear-gradient(90deg, var(--gold-dim), var(--gold)); }
+    .rating-bar-count {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-align: left;
+    }
+
+    /* ── Decade champions ───────────────────────────────────────────────── */
+    .decade-scroll {
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+      -webkit-overflow-scrolling: touch;
+    }
+    .decade-card {
+      flex: 0 0 200px;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: 20px 16px 16px;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: border-color var(--transition), transform var(--transition);
+      cursor: default;
+    }
+    .decade-card:hover {
+      border-color: var(--gold-dim);
+      transform: translateY(-2px);
+    }
+    .decade-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+    .decade-card:hover::after { opacity: 1; }
+    .decade-label {
+      font-family: var(--mono);
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--gold);
+      line-height: 1;
+      margin-bottom: 14px;
+    }
+    .decade-artist {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .decade-album {
+      font-size: 0.73rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .decade-rating-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--gold-glow);
+      border: 1px solid var(--gold-dim);
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--gold);
+    }
+
+    /* ── Top decades quality ─────────────────────────────────────────────── */
+    .top-decades-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .top-decade-row {
+      display: grid;
+      grid-template-columns: 60px 1fr 56px;
+      align-items: center;
+      gap: 12px;
+    }
+    .top-decade-name {
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--gold);
+    }
+    .top-decade-bar-track {
+      height: 10px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .top-decade-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      width: 0%;
+      background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+      transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .top-decade-avg {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    /* ── Loading / error states ─────────────────────────────────────────── */
+    .stats-loading {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      animation: pulse-opacity 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse-opacity {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+    .stats-error {
+      text-align: center;
+      padding: 32px 24px;
+      color: var(--red);
+      background: var(--red-glow);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-radius: var(--radius);
+      font-size: 0.88rem;
+    }
+
+    /* ── Shimmer skeleton (while loading) ───────────────────────────────── */
+    .skel {
+      background: linear-gradient(90deg, var(--surface) 25%, rgba(255,255,255,0.04) 50%, var(--surface) 75%);
+      background-size: 200% 100%;
+      animation: skel-move 1.4s ease-in-out infinite;
+      border-radius: 6px;
+    }
+    @keyframes skel-move {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ── Nav active on this page ────────────────────────────────────────── */
+    .nav-active-stats {
+      color: var(--text) !important;
+      background: rgba(245,158,11,0.08) !important;
+      border: 1px solid rgba(245,158,11,0.2);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="particle-canvas" aria-hidden="true"></canvas>
+
+  <header>
+    <div class="header-inner">
+      <h1>Scaruffi Checker</h1>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <nav id="main-nav">
+        <a href="/">Setlist</a>
+        <a href="/classifica">Classifica</a>
+        <a href="/stats" class="nav-active">Stats</a>
+        <a href="/scopri">Scopri</a>
+        <a href="/quiz">Quiz</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="stats-hero">
+      <h2>Statistiche</h2>
+      <p>Un'analisi quantitativa del canone secondo Scaruffi</p>
+    </div>
+
+    <div class="stats-main" id="stats-main">
+      <div class="stats-loading" id="global-loading">Caricamento dati in corso…</div>
+    </div>
+  </main>
+
+  <script src="/static/particles.js"></script>
+  <script>
+  /* ═══════════════════════════════════════════════════════════════════════
+     Stats page — data fetch + render
+  ═══════════════════════════════════════════════════════════════════════ */
+
+  /* ── Counter animation ─────────────────────────────────────────────── */
+  function animateCounter(el, target, duration = 1200) {
+    let start = 0, step = target / (duration / 16);
+    const tick = () => {
+      start = Math.min(start + step, target);
+      el.textContent = Math.floor(start).toLocaleString('it');
+      if (start < target) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  /* ── Animate rating as "X.X/10" ────────────────────────────────────── */
+  function animateRating(el, target, duration = 1200) {
+    let start = 0, step = target / (duration / 16);
+    const tick = () => {
+      start = Math.min(start + step, target);
+      el.textContent = start.toFixed(1);
+      if (start < target) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  /* ── Rating bucket color ────────────────────────────────────────────── */
+  function bucketColor(low) {
+    if (low < 6) return 'red';
+    if (low < 7) return 'grey';
+    return 'gold';
+  }
+
+  /* ── Build KPI section ──────────────────────────────────────────────── */
+  function buildKPI(data) {
+    const wrap = document.createElement('section');
+    wrap.innerHTML = `<div class="section-title">KPI</div>`;
+
+    const grid = document.createElement('div');
+    grid.className = 'kpi-grid';
+
+    const cards = [
+      {
+        label: 'Totale album',
+        value: data.total,
+        type: 'counter',
+        suffix: '',
+        icon: '💿',
+        gold: false,
+      },
+      {
+        label: 'Artisti unici',
+        value: data.artists,
+        type: 'counter',
+        suffix: '',
+        icon: '🎸',
+        gold: false,
+      },
+      {
+        label: 'Rating medio',
+        value: data.avg_rating,
+        type: 'rating',
+        suffix: '/10',
+        icon: '⭐',
+        gold: true,
+      },
+      {
+        label: 'Hall of Fame (≥ 9)',
+        value: data.top_9,
+        type: 'counter',
+        suffix: '',
+        icon: '✦',
+        gold: true,
+      },
+    ];
+
+    cards.forEach(c => {
+      const card = document.createElement('div');
+      card.className = 'kpi-card';
+      card.innerHTML = `
+        <div class="kpi-label">${c.label}</div>
+        <div class="kpi-value${c.gold ? ' gold' : ''}">
+          <span class="kpi-num">0</span><span class="kpi-suffix">${c.suffix}</span>
+        </div>
+        <div class="kpi-icon">${c.icon}</div>
+      `;
+      grid.appendChild(card);
+
+      const numEl = card.querySelector('.kpi-num');
+      // Animate after a small delay so the page has painted
+      setTimeout(() => {
+        if (c.type === 'rating') {
+          animateRating(numEl, c.value);
+        } else {
+          animateCounter(numEl, c.value);
+        }
+      }, 120);
+    });
+
+    wrap.appendChild(grid);
+    return wrap;
+  }
+
+  /* ── Build rating distribution section ─────────────────────────────── */
+  function buildDistribution(data) {
+    // data.rating_distribution: array of { low, high, count }
+    const dist = data.rating_distribution || [];
+    const maxCount = Math.max(...dist.map(b => b.count), 1);
+
+    const wrap = document.createElement('section');
+    wrap.innerHTML = `<div class="section-title">Distribuzione Rating</div>`;
+
+    const bars = document.createElement('div');
+    bars.className = 'rating-bars';
+
+    dist.forEach(bucket => {
+      const pct = (bucket.count / maxCount) * 100;
+      const color = bucketColor(bucket.low);
+      const label = `${bucket.low}–${bucket.high}`;
+
+      const row = document.createElement('div');
+      row.className = 'rating-row';
+      row.innerHTML = `
+        <div class="rating-row-label">${label}</div>
+        <div class="rating-bar-track">
+          <div class="rating-bar-fill ${color}" data-pct="${pct.toFixed(1)}"></div>
+        </div>
+        <div class="rating-bar-count">${bucket.count.toLocaleString('it')}</div>
+      `;
+      bars.appendChild(row);
+    });
+
+    wrap.appendChild(bars);
+
+    // Animate bar widths after paint
+    setTimeout(() => {
+      wrap.querySelectorAll('.rating-bar-fill').forEach(el => {
+        el.style.width = el.dataset.pct + '%';
+      });
+    }, 180);
+
+    return wrap;
+  }
+
+  /* ── Build decade champions section ─────────────────────────────────── */
+  function buildDecadeChampions(champions) {
+    const wrap = document.createElement('section');
+    wrap.innerHTML = `<div class="section-title">Decade Champions</div>`;
+
+    if (!champions || champions.length === 0) {
+      wrap.innerHTML += `<p class="stats-error">Nessun dato disponibile.</p>`;
+      return wrap;
+    }
+
+    const scroll = document.createElement('div');
+    scroll.className = 'decade-scroll';
+
+    champions.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'decade-card';
+      card.innerHTML = `
+        <div class="decade-label">${item.decade}</div>
+        <div class="decade-artist">${escHtml(item.artist)}</div>
+        <div class="decade-album">${escHtml(item.album)}</div>
+        <div class="decade-rating-pill">✦ ${Number(item.rating).toFixed(1)}</div>
+      `;
+      scroll.appendChild(card);
+    });
+
+    wrap.appendChild(scroll);
+    return wrap;
+  }
+
+  /* ── Build top decades by quality section ───────────────────────────── */
+  function buildTopDecades(data) {
+    // data.top_decades_by_quality: array of { decade, avg_rating, count }
+    const list = (data.top_decades_by_quality || []).slice(0, 5);
+    if (list.length === 0) return null;
+
+    // Max avg to scale bars
+    const maxAvg = Math.max(...list.map(d => d.avg_rating), 1);
+
+    const wrap = document.createElement('section');
+    wrap.innerHTML = `<div class="section-title">Top 5 Decadi per Qualità</div>`;
+
+    const rows = document.createElement('div');
+    rows.className = 'top-decades-list';
+
+    list.forEach(d => {
+      const pct = (d.avg_rating / maxAvg) * 100;
+      const row = document.createElement('div');
+      row.className = 'top-decade-row';
+      row.innerHTML = `
+        <div class="top-decade-name">${d.decade}</div>
+        <div class="top-decade-bar-track">
+          <div class="top-decade-bar-fill" data-pct="${pct.toFixed(1)}"></div>
+        </div>
+        <div class="top-decade-avg">${Number(d.avg_rating).toFixed(2)}</div>
+      `;
+      rows.appendChild(row);
+    });
+
+    wrap.appendChild(rows);
+
+    setTimeout(() => {
+      wrap.querySelectorAll('.top-decade-bar-fill').forEach(el => {
+        el.style.width = el.dataset.pct + '%';
+      });
+    }, 250);
+
+    return wrap;
+  }
+
+  /* ── Utility: escape html ───────────────────────────────────────────── */
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  /* ── Error renderer ─────────────────────────────────────────────────── */
+  function showError(container, msg) {
+    const el = document.createElement('div');
+    el.className = 'stats-error';
+    el.textContent = msg;
+    container.appendChild(el);
+  }
+
+  /* ── Main: fetch + render ───────────────────────────────────────────── */
+  async function loadStats() {
+    const container = document.getElementById('stats-main');
+    const loadingEl = document.getElementById('global-loading');
+
+    try {
+      // Fetch both endpoints in parallel
+      const [statsRes, champRes] = await Promise.all([
+        fetch('/api/stats'),
+        fetch('/api/decade-champions'),
+      ]);
+
+      if (!statsRes.ok) throw new Error(`/api/stats → HTTP ${statsRes.status}`);
+      const statsData = await statsRes.json();
+
+      let champions = [];
+      if (champRes.ok) {
+        champions = await champRes.json();
+      }
+
+      // Remove loading indicator
+      loadingEl.remove();
+
+      // Update nav count
+      const navCount = document.getElementById('album-count-nav');
+      if (navCount && statsData.total != null) {
+        navCount.textContent = statsData.total.toLocaleString('it');
+      }
+
+      // 1. KPI cards
+      container.appendChild(buildKPI(statsData));
+
+      // 2. Rating distribution
+      if (statsData.rating_distribution && statsData.rating_distribution.length > 0) {
+        container.appendChild(buildDistribution(statsData));
+      }
+
+      // 3. Decade champions
+      container.appendChild(buildDecadeChampions(champions));
+
+      // 4. Top decades by quality
+      const topDecSec = buildTopDecades(statsData);
+      if (topDecSec) container.appendChild(topDecSec);
+
+    } catch (err) {
+      loadingEl.remove();
+      showError(container, `Errore nel caricamento: ${err.message}`);
+      console.error('[stats]', err);
+    }
+  }
+
+  /* ── Hamburger nav (mirror of index.html) ───────────────────────────── */
+  const navToggle = document.getElementById('nav-toggle');
+  const mainNav   = document.getElementById('main-nav');
+  if (navToggle && mainNav) {
+    navToggle.addEventListener('click', () => {
+      const open = mainNav.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', open);
+    });
+  }
+
+  /* ── Boot ────────────────────────────────────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', loadStats);
+  </script>
+</body>
+</html>

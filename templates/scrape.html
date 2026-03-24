@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Indicizzazione — Scaruffi Checker</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <h1>Scaruffi Checker</h1>
+      <nav>
+        <a href="/">Controlla brano</a>
+        <a href="/scrape" class="nav-active">Indicizzazione</a>
+        <span class="db-status">DB: <strong id="album-count">…</strong> album</span>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="search-box">
+      <h2>Indicizzazione scaruffi.com</h2>
+
+      <div class="scrape-modes">
+
+        <!-- Scansione rapida -->
+        <div class="scrape-mode-card">
+          <div class="scrape-mode-icon">⚡</div>
+          <div class="scrape-mode-body">
+            <h3>Scansione rapida</h3>
+            <p>Indicizza solo le pagine "best of" per decade e per anno (album con rating ≥ 7). Veloce — circa 3-5 minuti.</p>
+            <button id="quick-btn" class="btn-quick">Avvia scansione rapida</button>
+          </div>
+        </div>
+
+        <!-- Scansione profonda -->
+        <div class="scrape-mode-card scrape-mode-deep">
+          <div class="scrape-mode-icon">🔬</div>
+          <div class="scrape-mode-body">
+            <h3>Scansione profonda <span class="badge badge-gold">Consigliata</span></h3>
+            <p>
+              Indicizza <strong>tutti i ~9.500 artisti</strong> recensiti da Scaruffi — ogni album,
+              ogni rating, qualsiasi voto dal 1 al 10. Resume automatico: salta gli artisti già
+              presenti nel DB. Durata stimata: <strong>3-4 ore</strong> (rispetta i limiti del server).
+            </p>
+            <button id="deep-btn" class="btn-deep">Avvia scansione profonda</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Log -->
+      <div id="progress-box" class="hidden">
+        <div class="log-header">
+          <span id="scan-type-label">Log</span>
+          <span id="progress-status"></span>
+        </div>
+        <div id="log" class="log"></div>
+      </div>
+
+    </section>
+  </main>
+
+  <style>
+    .scrape-modes { display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px; }
+
+    .scrape-mode-card {
+      display: flex;
+      gap: 20px;
+      padding: 22px 24px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: rgba(17,24,39,0.6);
+      backdrop-filter: blur(12px);
+      align-items: flex-start;
+    }
+
+    .scrape-mode-deep {
+      border-color: rgba(245,158,11,0.3);
+      background: rgba(245,158,11,0.04);
+    }
+
+    .scrape-mode-icon { font-size: 2rem; flex-shrink: 0; line-height: 1; padding-top: 4px; }
+
+    .scrape-mode-body { flex: 1; }
+    .scrape-mode-body h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+    .scrape-mode-body p  { font-size: 0.875rem; color: var(--muted); line-height: 1.6; margin-bottom: 14px; }
+
+    .btn-quick, .btn-deep {
+      padding: 10px 24px;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-family: var(--font);
+      font-weight: 700;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    }
+
+    .btn-quick {
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-quick:hover:not(:disabled) { background: rgba(255,255,255,0.13); transform: translateY(-1px); }
+
+    .btn-deep {
+      background: linear-gradient(135deg, #d97706, var(--gold), #fbbf24);
+      color: #07090f;
+    }
+    .btn-deep:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(245,158,11,0.35);
+    }
+
+    .btn-quick:disabled, .btn-deep:disabled { opacity: 0.4; cursor: default; transform: none; box-shadow: none; }
+
+    @media (max-width: 540px) {
+      .scrape-mode-card { flex-direction: column; gap: 12px; padding: 16px; }
+    }
+  </style>
+
+  <script>
+    const quickBtn   = document.getElementById('quick-btn');
+    const deepBtn    = document.getElementById('deep-btn');
+    const progressBox = document.getElementById('progress-box');
+    const log        = document.getElementById('log');
+    const statusEl   = document.getElementById('progress-status');
+    const labelEl    = document.getElementById('scan-type-label');
+    const albumCount = document.getElementById('album-count');
+
+    fetch('/status').then(r => r.json()).then(d => {
+      albumCount.textContent = d.album_count.toLocaleString('it-IT');
+    });
+
+    function startScan(endpoint, label) {
+      quickBtn.disabled = true;
+      deepBtn.disabled  = true;
+      progressBox.classList.remove('hidden');
+      log.innerHTML = '';
+      labelEl.textContent = label;
+      statusEl.textContent = 'In corso…';
+
+      const es = new EventSource(endpoint);
+
+      es.onmessage = (e) => {
+        const msg = e.data;
+        if (msg.startsWith('DONE:')) {
+          const total = parseInt(msg.slice(5)).toLocaleString('it-IT');
+          appendLog('✓ Completato — ' + total + ' album nel database.');
+          statusEl.textContent = total + ' album';
+          albumCount.textContent = total;
+          quickBtn.disabled = false;
+          deepBtn.disabled  = false;
+          es.close();
+        } else if (msg.startsWith('ERROR:')) {
+          appendLog('✗ Errore: ' + msg.slice(6));
+          quickBtn.disabled = false;
+          deepBtn.disabled  = false;
+          es.close();
+        } else {
+          appendLog(msg);
+        }
+      };
+
+      es.onerror = () => {
+        appendLog('Connessione interrotta (il processo continua in background).');
+        quickBtn.disabled = false;
+        deepBtn.disabled  = false;
+        es.close();
+      };
+    }
+
+    quickBtn.addEventListener('click', () =>
+      startScan('/scrape/run', 'Scansione rapida')
+    );
+
+    deepBtn.addEventListener('click', () => {
+      if (!confirm(
+        'La scansione profonda indicizza tutti i ~9.500 artisti recensiti da Scaruffi.\n' +
+        'Durata stimata: 3-4 ore. Il DB viene aggiornato in tempo reale.\n\n' +
+        'Vuoi procedere?'
+      )) return;
+      startScan('/scrape/deep', 'Scansione profonda');
+    });
+
+    function appendLog(msg) {
+      const line = document.createElement('div');
+      line.textContent = msg;
+      log.appendChild(line);
+      log.scrollTop = log.scrollHeight;
+    }
+  </script>
+</body>
+</html>

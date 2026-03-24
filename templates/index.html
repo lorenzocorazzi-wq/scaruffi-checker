@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#07090f">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Setlist · Scaruffi Checker</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <canvas id="particle-canvas" aria-hidden="true"></canvas>
+
+  <header>
+    <div class="header-inner">
+      <h1>Scaruffi Checker</h1>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <nav id="main-nav">
+        <a href="/" class="nav-active">Setlist</a>
+        <a href="/classifica">Classifica</a>
+        <a href="/stats">Stats</a>
+        <a href="/scopri">Scopri</a>
+        <a href="/quiz">Quiz</a>
+        <span class="db-status">DB: <strong id="album-count">{{ album_count }}</strong> album</span>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ── Rassegna stampa ticker ── -->
+  <div class="ticker-wrap" aria-label="Citazioni su Scaruffi" role="marquee">
+    <div class="ticker-label">RASSEGNA STAMPA</div>
+    <div class="ticker-track" id="ticker-track">
+      <div class="ticker-inner" id="ticker-inner">
+        <span class="quote-item">«Artisti inutili, obsoleti, di nessun peso all'interno della musica» — Scaruffi sui Beatles, Bowie, Radiohead e Nirvana</span>
+        <span class="quote-sep">✦</span>
+        <span class="quote-item">«Piero Scaruffi è un vero intenditore di musica» — Un sordo dalla nascita</span>
+        <span class="quote-sep">✦</span>
+        <span class="quote-item">«Le canzonette da tre minuti avevano già fatto il loro tempo nel 1940»</span>
+        <span class="quote-sep">✦</span>
+        <span class="quote-item">«I Beatles fanno cagare, gli Aqua no» — Sull'arbitrarietà del metodo Scaruffi</span>
+        <span class="quote-sep">✦</span>
+        <span class="quote-item">«Io li capisco completamente al primo ascolto (perché sono Dio)»</span>
+        <span class="quote-sep">✦</span>
+        <span class="quote-item">«Fiat Lux! Mmm… 10/10»</span>
+        <span class="quote-sep">✦</span>
+        <span class="quote-item">«Non esiste altro dio al di fuori di me» — dalla sezione Autobiografia</span>
+        <span class="quote-sep">✦</span>
+        <span class="quote-item">«Un genio misconosciuto» — lui, riferito a se stesso</span>
+        <span class="quote-sep">✦</span>
+        <!-- Copia duplicata per loop seamless -->
+        <span class="quote-item">«Artisti inutili, obsoleti, di nessun peso all'interno della musica» — Scaruffi sui Beatles, Bowie, Radiohead e Nirvana</span>
+        <span class="quote-sep">✦</span>
+        <span class="quote-item">«Piero Scaruffi è un vero intenditore di musica» — Un sordo dalla nascita</span>
+        <span class="quote-sep">✦</span>
+        <span class="quote-item">«Le canzonette da tre minuti avevano già fatto il loro tempo nel 1940»</span>
+        <span class="quote-sep">✦</span>
+        <span class="quote-item">«I Beatles fanno cagare, gli Aqua no» — Sull'arbitrarietà del metodo Scaruffi</span>
+        <span class="quote-sep">✦</span>
+        <span class="quote-item">«Io li capisco completamente al primo ascolto (perché sono Dio)»</span>
+        <span class="quote-sep">✦</span>
+        <span class="quote-item">«Fiat Lux! Mmm… 10/10»</span>
+        <span class="quote-sep">✦</span>
+        <span class="quote-item">«Non esiste altro dio al di fuori di me» — dalla sezione Autobiografia</span>
+        <span class="quote-sep">✦</span>
+        <span class="quote-item">«Un genio misconosciuto» — lui, riferito a se stesso</span>
+        <span class="quote-sep">✦</span>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <!-- ── Hero ── -->
+    <section class="hero-section">
+      <div class="hero-eyebrow">Il Canone di Piero Scaruffi</div>
+      <h2 class="hero-title">SETLIST</h2>
+      <p class="hero-sub">Scopri quali brani può suonare la tua band secondo il giudizio infallibile del Maestro</p>
+      <div class="rules-strip">
+        <div class="rs-item rs-gold">
+          <span class="rs-score">≥ 7</span>
+          <span class="rs-icon">✦</span>
+          <span class="rs-label">Tutte le tracce</span>
+        </div>
+        <div class="rs-divider"></div>
+        <div class="rs-item rs-grey">
+          <span class="rs-score">6 – &lt;7</span>
+          <span class="rs-icon">◇</span>
+          <span class="rs-label">Top 2 singoli</span>
+        </div>
+        <div class="rs-divider"></div>
+        <div class="rs-item rs-red">
+          <span class="rs-score">&lt; 6</span>
+          <span class="rs-icon">✕</span>
+          <span class="rs-label">Vietato</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Search ── -->
+    <section class="search-box">
+      <p class="search-hint">Cerca per artista, album o brano — anche uno solo basta</p>
+      <form id="check-form" autocomplete="off">
+
+
+        <div class="form-row" id="artist-row" style="position:relative">
+          <label for="artist" id="artist-label">Artista</label>
+          <input type="text" id="artist" name="artist"
+                 placeholder="es. Can"
+                 inputmode="text" autocapitalize="words">
+          <div id="artist-suggestions" class="suggestions hidden"></div>
+          <div id="artist-hint" class="field-hint hidden">↓ Clicca su Album per vedere tutti i suoi album</div>
+        </div>
+
+        <div class="form-row" id="album-row" style="position:relative">
+          <label for="album">Album</label>
+          <input type="text" id="album" name="album"
+                 placeholder="es. Tago Mago"
+                 inputmode="text" autocapitalize="words">
+          <div id="album-suggestions" class="suggestions hidden"></div>
+        </div>
+
+        <div class="form-row" id="song-row" style="position:relative">
+          <label for="song">Brano</label>
+          <input type="text" id="song" name="song"
+                 placeholder="es. Halleluwah"
+                 inputmode="text" autocapitalize="words">
+          <div id="song-suggestions" class="suggestions hidden"></div>
+        </div>
+
+        <!-- Live album verification panel -->
+        <div id="track-verify-panel" class="track-verify-panel hidden"></div>
+
+        <div id="live-match" class="live-match hidden"></div>
+
+      </form>
+    </section>
+
+    <!-- ── Result ── -->
+    <section id="result-section" class="hidden">
+      <div id="result-box"></div>
+    </section>
+  </main>
+
+  <!-- ── Gallery ── -->
+  <section class="gallery-section" id="gallery">
+    <div class="gallery-header">
+      <h2>Piero Scaruffi</h2>
+      <p class="gallery-sub">Un viaggio attraverso l'uomo che ha osato dare un voto a tutto</p>
+    </div>
+    <div class="gallery-timeline" id="gallery-timeline">
+
+      <div class="gallery-item gi-left reveal">
+        <div class="gi-photo"><img src="/static/gallery/scaruffi_01.jpg" alt="Scaruffi" loading="lazy"></div>
+        <div class="gi-quote">&laquo;Io ho ascoltato più musica di chiunque altro sulla Terra&raquo;</div>
+      </div>
+
+      <div class="gallery-quote-row reveal">
+        <blockquote>«Artisti inutili, obsoleti, di nessun peso all'interno della musica» <cite>— su Beatles, Bowie, Radiohead e Nirvana</cite></blockquote>
+      </div>
+
+      <div class="gallery-item gi-right reveal">
+        <div class="gi-photo"><img src="/static/gallery/scaruffi_02.jpg" alt="Scaruffi" loading="lazy"></div>
+        <div class="gi-quote">&laquo;Le canzonette da tre minuti avevano già fatto il loro tempo nel 1940&raquo;</div>
+      </div>
+
+      <div class="gallery-item gi-left reveal">
+        <div class="gi-photo"><img src="/static/gallery/scaruffi_03.jpg" alt="Scaruffi" loading="lazy"></div>
+        <div class="gi-quote">&laquo;Fiat Lux! Mmm… 10/10&raquo;</div>
+      </div>
+
+      <div class="gallery-quote-row reveal">
+        <blockquote>«Piero Scaruffi è un vero intenditore di musica» <cite>— Un sordo dalla nascita</cite></blockquote>
+      </div>
+
+      <div class="gallery-item gi-right reveal">
+        <div class="gi-photo"><img src="/static/gallery/scaruffi_04.jpg" alt="Scaruffi" loading="lazy"></div>
+        <div class="gi-quote">&laquo;Non esiste altro dio al di fuori di me&raquo;</div>
+      </div>
+
+      <div class="gallery-item gi-left reveal">
+        <div class="gi-photo"><img src="/static/gallery/scaruffi_05.jpg" alt="Scaruffi" loading="lazy"></div>
+        <div class="gi-quote">&laquo;Io li capisco completamente al primo ascolto (perché sono Dio)&raquo;</div>
+      </div>
+
+      <div class="gallery-quote-row reveal">
+        <blockquote>«I Beatles fanno cagare, gli Aqua no» <cite>— Sull'arbitrarietà del metodo Scaruffi</cite></blockquote>
+      </div>
+
+      <div class="gallery-item gi-right reveal">
+        <div class="gi-photo"><img src="/static/gallery/scaruffi_06.jpg" alt="Scaruffi" loading="lazy"></div>
+        <div class="gi-quote">&laquo;Un genio misconosciuto&raquo; — lui, su sé stesso</div>
+      </div>
+
+      <div class="gallery-item gi-left reveal">
+        <div class="gi-photo"><img src="/static/gallery/scaruffi_07.jpg" alt="Scaruffi" loading="lazy"></div>
+        <div class="gi-quote">&laquo;La musica pop è morta nel 1968&raquo;</div>
+      </div>
+
+      <div class="gallery-quote-row reveal">
+        <blockquote>«In realtà il rock è solo rumore amplificato» <cite>— dalla sezione teorica</cite></blockquote>
+      </div>
+
+      <div class="gallery-item gi-right reveal">
+        <div class="gi-photo"><img src="/static/gallery/scaruffi_08.jpg" alt="Scaruffi" loading="lazy"></div>
+        <div class="gi-quote">&laquo;Ho letto più libri di qualunque biblioteca provinciale&raquo;</div>
+      </div>
+
+      <div class="gallery-item gi-left reveal">
+        <div class="gi-photo"><img src="/static/gallery/scaruffi_09.jpg" alt="Scaruffi" loading="lazy"></div>
+        <div class="gi-quote">&laquo;Il mio sito è la più grande enciclopedia musicale del mondo&raquo;</div>
+      </div>
+
+      <div class="gallery-quote-row reveal">
+        <blockquote>«La classifica di Pitchfork? Roba da ragazzini» <cite>— da una recensione</cite></blockquote>
+      </div>
+
+      <div class="gallery-item gi-right reveal">
+        <div class="gi-photo"><img src="/static/gallery/scaruffi_10.jpg" alt="Scaruffi" loading="lazy"></div>
+        <div class="gi-quote">&laquo;Radiohead non ha mai fatto niente di originale&raquo;</div>
+      </div>
+
+      <div class="gallery-item gi-left reveal">
+        <div class="gi-photo"><img src="/static/gallery/scaruffi_11.jpg" alt="Scaruffi" loading="lazy"></div>
+        <div class="gi-quote">&laquo;Il jazz moderno finisce con Coltrane. Tutto il resto è noia&raquo;</div>
+      </div>
+
+      <div class="gallery-quote-row reveal">
+        <blockquote>«Non ho più erezioni da tempo e ho iniziato a scrivere recensioni» <cite>— titolo di un'opera fittizia, Nonciclopedia</cite></blockquote>
+      </div>
+
+      <div class="gallery-item gi-right reveal">
+        <div class="gi-photo"><img src="/static/gallery/scaruffi_12.jpg" alt="Scaruffi" loading="lazy"></div>
+        <div class="gi-quote">&laquo;Sono l'unico critico musicale al mondo che non si fa comprare&raquo;</div>
+      </div>
+
+      <div class="gallery-item gi-left reveal">
+        <div class="gi-photo"><img src="/static/gallery/scaruffi_13.jpg" alt="Scaruffi" loading="lazy"></div>
+        <div class="gi-quote">&laquo;Sgt. Pepper? Sopravvalutato. Troppi applausi. 7/10&raquo;</div>
+      </div>
+
+      <div class="gallery-quote-row reveal">
+        <blockquote>«I Rolling Stones senza Brian Jones sono solo una tribute band» <cite>— Scaruffi</cite></blockquote>
+      </div>
+
+      <div class="gallery-item gi-right reveal">
+        <div class="gi-photo"><img src="/static/gallery/scaruffi_14.jpg" alt="Scaruffi" loading="lazy"></div>
+        <div class="gi-quote">&laquo;La musica elettronica tedesca degli anni '70 è l'unico vero futuro&raquo;</div>
+      </div>
+
+      <div class="gallery-item gi-left reveal">
+        <div class="gi-photo"><img src="/static/gallery/scaruffi_15.jpg" alt="Scaruffi" loading="lazy"></div>
+        <div class="gi-quote">&laquo;Ho visitato più paesi di Marco Polo&raquo;</div>
+      </div>
+
+      <div class="gallery-quote-row reveal">
+        <blockquote>«Nirvana: un'altra band di adolescenti arrabbiati. 6/10» <cite>— Scaruffi</cite></blockquote>
+      </div>
+
+      <div class="gallery-item gi-right reveal">
+        <div class="gi-photo"><img src="/static/gallery/scaruffi_16.jpg" alt="Scaruffi" loading="lazy"></div>
+        <div class="gi-quote">&laquo;Il mio sistema di rating è matematicamente infallibile&raquo;</div>
+      </div>
+
+      <div class="gallery-item gi-left reveal">
+        <div class="gi-photo"><img src="/static/gallery/scaruffi_17.jpg" alt="Scaruffi" loading="lazy"></div>
+        <div class="gi-quote">&laquo;La cultura non è democratica. Io ne sono la prova&raquo;</div>
+      </div>
+
+      <div class="gallery-quote-row reveal">
+        <blockquote>«Il pop degli anni '80 è la dark age della musica» <cite>— Scaruffi</cite></blockquote>
+      </div>
+
+      <div class="gallery-item gi-right reveal">
+        <div class="gi-photo"><img src="/static/gallery/scaruffi_18.jpg" alt="Scaruffi" loading="lazy"></div>
+        <div class="gi-quote">&laquo;Sono nato critico. Mia madre mi diede 6/10&raquo;</div>
+      </div>
+
+      <div class="gallery-item gi-left reveal">
+        <div class="gi-photo"><img src="/static/gallery/scaruffi_19.jpg" alt="Scaruffi" loading="lazy"></div>
+        <div class="gi-quote">&laquo;Ogni mia parola è un documento storico&raquo;</div>
+      </div>
+
+      <div class="gallery-quote-row reveal">
+        <blockquote>«Michael Jackson: ottimo ballerino, musicista mediocre» <cite>— Scaruffi</cite></blockquote>
+      </div>
+
+      <div class="gallery-item gi-right reveal">
+        <div class="gi-photo"><img src="/static/gallery/scaruffi_20.jpg" alt="Scaruffi" loading="lazy"></div>
+        <div class="gi-quote">&laquo;Il futuro della musica è già passato&raquo;</div>
+      </div>
+
+      <div class="gallery-item gi-left reveal">
+        <div class="gi-photo"><img src="/static/gallery/scaruffi_21.jpg" alt="Scaruffi" loading="lazy"></div>
+        <div class="gi-quote">&laquo;Ho ascoltato 50.000 album. Nessuno di voi può capire&raquo;</div>
+      </div>
+
+      <div class="gallery-quote-row reveal">
+        <blockquote>«Questo sito esiste da prima di Google» <cite>— Scaruffi, con orgoglio</cite></blockquote>
+      </div>
+
+      <div class="gallery-item gi-right reveal">
+        <div class="gi-photo"><img src="/static/gallery/scaruffi_22.jpg" alt="Scaruffi" loading="lazy"></div>
+        <div class="gi-quote">&laquo;Alla fine, la storia mi darà ragione&raquo;</div>
+      </div>
+
+    </div><!-- /gallery-timeline -->
+  </section>
+
+  <script src="/static/particles.js"></script>
+  <script>
+  (function () {
+    const form           = document.getElementById('check-form');
+    const resultSec      = document.getElementById('result-section');
+    const resultBox      = document.getElementById('result-box');
+    const artistInput    = document.getElementById('artist');
+    const artistRow      = document.getElementById('artist-row');
+    const artistSugBox   = document.getElementById('artist-suggestions');
+    const albumInput     = document.getElementById('album');
+    const albumRow       = document.getElementById('album-row');
+    const albumSugBox    = document.getElementById('album-suggestions');
+    const songInput      = document.getElementById('song');
+    const songRow        = document.getElementById('song-row');
+    const songSugBox     = document.getElementById('song-suggestions');
+    const liveMatch      = document.getElementById('live-match');
+    const navToggle      = document.getElementById('nav-toggle');
+    const mainNav        = document.getElementById('main-nav');
+
+    // ── Mobile hamburger ─────────────────────────────────────────────────────
+    navToggle.addEventListener('click', () => {
+      const open = mainNav.classList.toggle('nav-open');
+      navToggle.setAttribute('aria-expanded', open);
+    });
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    function ratingClass(r) { return r >= 6 ? 'r-gold' : 'r-red'; }
+
+    // ── Artist autocomplete (local DB) ────────────────────────────────────────
+    let artistTimer = null;
+    artistInput.addEventListener('input', () => {
+      clearTimeout(artistTimer);
+      const q = artistInput.value.trim();
+      if (q.length < 2) { hide(artistSugBox, artistRow); hideLM(); return; }
+      artistTimer = setTimeout(() => fetchArtistSug(q), 150);
+    });
+    artistInput.addEventListener('blur', () => {
+      setTimeout(() => hide(artistSugBox, artistRow), 180);
+      setTimeout(() => {
+        if (artistInput.value.trim().length > 0 && albumInput.value.trim() === '') {
+          document.getElementById('artist-hint').classList.remove('hidden');
+        }
+      }, 200);
+    });
+
+    async function fetchArtistSug(q) {
+      try {
+        const data = await fetch('/artist-suggest?q=' + encodeURIComponent(q)).then(r => r.json());
+        renderArtistSug(data);
+      } catch (_) {}
+    }
+
+    function renderArtistSug(items) {
+      if (!items.length) { hide(artistSugBox, artistRow); return; }
+      artistSugBox.innerHTML = items.map(it => {
+        const rc = ratingClass(it.top_rating);
+        return `<div class="suggestion-item" tabindex="0"
+                     data-artist="${esc(it.artist)}" data-album="${esc(it.top_album)}"
+                     data-rating="${it.top_rating}" data-year="${it.year||''}">
+          <span class="sug-artist">${esc(it.artist)}</span>
+          <span class="sug-detail">${esc(it.top_album)} (${it.year||'?'})</span>
+          <span class="sug-rating ${rc}">${it.top_rating}/10</span>
+        </div>`;
+      }).join('');
+      artistSugBox.classList.remove('hidden');
+      artistSugBox.querySelectorAll('.suggestion-item').forEach(el => {
+        el.addEventListener('mousedown', () => {
+          artistInput.value = el.dataset.artist;
+          // NON pre-selezionare l'album: l'utente sceglierà dall'elenco
+          hide(artistSugBox, artistRow);
+          document.getElementById('artist-hint').classList.add('hidden');
+          // Label confirmed feedback
+          const lbl = document.getElementById('artist-label');
+          lbl.textContent = 'Artista ✓';
+          lbl.classList.add('label-confirmed');
+          setTimeout(() => { lbl.textContent = 'Artista'; lbl.classList.remove('label-confirmed'); }, 2000);
+          showLM({ artist: el.dataset.artist, top_album: el.dataset.album,
+                   top_rating: +el.dataset.rating, year: el.dataset.year });
+          // Apri subito il dropdown album per mostrare tutti gli album dell'artista
+          albumRow.classList.add('loading');
+          fetchAlbumSug('');
+          albumInput.focus();
+        });
+      });
+    }
+
+    // ── Album suggestions: aggiorna fade quando si scrolla ───────────────────
+    albumSugBox.addEventListener('scroll', () => {
+      const atEnd = albumSugBox.scrollTop + albumSugBox.clientHeight >= albumSugBox.scrollHeight - 4;
+      albumSugBox.classList.toggle('scrolled-end', atEnd);
+    });
+
+    // ── Album autocomplete (DB Scaruffi) ──────────────────────────────────────
+    let albumTimer = null;
+
+    albumInput.addEventListener('focus', () => {
+      document.getElementById('artist-hint').classList.add('hidden');
+      const artist = artistInput.value.trim();
+      const q      = albumInput.value.trim();
+      // Se l'artista è già compilato e il campo album è vuoto/corto → mostra subito tutti gli album
+      if (artist && q.length < 2) {
+        albumRow.classList.add('loading');
+        fetchAlbumSug('');
+      }
+    });
+
+    albumInput.addEventListener('input', () => {
+      document.getElementById('artist-hint').classList.add('hidden');
+      clearTimeout(albumTimer);
+      const q = albumInput.value.trim();
+      const artist = artistInput.value.trim();
+      if (q.length < 2 && !artist) { hide(albumSugBox, albumRow); return; }
+      albumRow.classList.add('loading');
+      albumTimer = setTimeout(() => fetchAlbumSug(q), 150);
+    });
+    albumInput.addEventListener('blur', () => setTimeout(() => hide(albumSugBox, albumRow), 180));
+
+    async function fetchAlbumSug(q) {
+      const artist = artistInput.value.trim();
+      const url = '/album-suggest?q=' + encodeURIComponent(q) +
+                  (artist ? '&artist=' + encodeURIComponent(artist) : '');
+      try {
+        const data = await fetch(url).then(r => r.json());
+        albumRow.classList.remove('loading');
+        renderAlbumSug(data, artist, !q);
+      } catch (_) { albumRow.classList.remove('loading'); }
+    }
+
+    function renderAlbumSug(items, artist, isArtistMode) {
+      if (!items.length) { hide(albumSugBox, albumRow); return; }
+
+      const header = (isArtistMode && artist)
+        ? `<div class="sug-header">Album di <strong>${esc(artist)}</strong> <span class="sug-count">${items.length}</span></div>`
+        : '';
+
+      albumSugBox.innerHTML = header + items.map(it => {
+        const rc  = ratingClass(it.rating);
+        const yr  = it.year ? `<span class="sug-year">${it.year}</span>` : '';
+        return `<div class="suggestion-item sug-album-item" tabindex="0"
+                     data-artist="${esc(it.artist)}" data-album="${esc(it.album)}"
+                     data-rating="${it.rating}" data-year="${it.year||''}">
+          <div class="sug-album-left">
+            <span class="sug-album-title">${esc(it.album)}</span>${yr}
+          </div>
+          <span class="sug-rating ${rc}">${it.rating}/10</span>
+        </div>`;
+      }).join('');
+      albumSugBox.classList.remove('hidden');
+      // ── Overflow detection: barra di scorrimento dopo 3 album ────────────
+      requestAnimationFrame(() => {
+        const hasOvf = albumSugBox.scrollHeight > albumSugBox.clientHeight + 2;
+        albumSugBox.classList.toggle('has-overflow', hasOvf);
+        albumSugBox.classList.remove('scrolled-end');
+      });
+      albumSugBox.querySelectorAll('.suggestion-item').forEach(el => {
+        el.addEventListener('mousedown', () => {
+          albumInput.value  = el.dataset.album;
+          artistInput.value = el.dataset.artist;
+          hide(albumSugBox, albumRow);
+          showLM({ artist: el.dataset.artist, top_album: el.dataset.album,
+                   top_rating: +el.dataset.rating, year: el.dataset.year });
+          const fd = new FormData();
+          fd.append('artist', el.dataset.artist);
+          fd.append('album',  el.dataset.album);
+          autoCheck(fd);
+        });
+        el.addEventListener('keydown', e => e.key === 'Enter' && el.dispatchEvent(new MouseEvent('mousedown')));
+      });
+    }
+
+    // ── Auto-check helper ─────────────────────────────────────────────────────
+    async function autoCheck(fd) {
+      try {
+        resultSec.classList.add('hidden');
+        const res = await fetch('/check', { method: 'POST', body: fd });
+        const r   = await res.json();
+        renderResult(r);
+        resultSec.classList.remove('hidden');
+        setTimeout(() => resultSec.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 60);
+      } catch (_) {}
+    }
+
+    // ── Track verify panel ────────────────────────────────────────────────────
+    const tvPanel = document.getElementById('track-verify-panel');
+    let tvTimer = null;
+
+    function tvShow(state, data) {
+      tvPanel.className = 'track-verify-panel';
+      if (state === 'loading') {
+        tvPanel.classList.add('tv-loading');
+        tvPanel.innerHTML = `<div class="tv-spinner"></div> Ricerca album su MusicBrainz…`;
+        tvPanel.classList.remove('hidden');
+        return;
+      }
+      if (state === 'hide') { tvPanel.classList.add('hidden'); return; }
+
+      const d = data;
+      const inScaruffi = d.in_scaruffi;
+      const rating = d.rating;
+      let verdictCls = 'unknown', verdictTxt = 'Non in Scaruffi';
+      if (inScaruffi) {
+        if (rating < 6)      { verdictCls = 'no';  verdictTxt = 'Non ammesso (< 6)'; }
+        else if (rating < 7) { verdictCls = 'yes'; verdictTxt = 'Top 2 singoli (6–<7)'; }
+        else                 { verdictCls = 'yes'; verdictTxt = 'Tutte le tracce (≥ 7)'; }
+      }
+
+      tvPanel.classList.add(inScaruffi ? 'tv-found' : 'tv-not-found');
+      tvPanel.innerHTML = `
+        <div class="tv-header">
+          <span class="tv-label">Verifica album originale</span>
+          <span class="tv-verdict ${verdictCls}">${verdictTxt}</span>
+        </div>
+        <div class="tv-grid">
+          <span class="tv-key">Brano</span>
+          <span class="tv-val">${esc(d.song)}</span>
+          <span class="tv-key">Artista</span>
+          <span class="tv-val">${esc(d.artist)}</span>
+          <span class="tv-key">Album (MB)</span>
+          <span class="tv-val">${esc(d.album)}${d.year ? `<span class="tv-year">${d.year}</span>` : ''}</span>
+          ${inScaruffi ? `
+          <span class="tv-key">Scaruffi</span>
+          <span class="tv-val">${esc(d.scaruffi_album || d.album)}${d.scaruffi_year ? `<span class="tv-year">${d.scaruffi_year}</span>` : ''}
+            <span class="tv-rating ${rating >= 6 ? 'r-gold' : 'r-red'}">${rating}/10</span>
+          </span>` : `
+          <span class="tv-key">Scaruffi</span>
+          <span class="tv-val" style="color:var(--muted)">Non presente nel database</span>`}
+        </div>`;
+      tvPanel.classList.remove('hidden');
+    }
+
+    async function fetchTrackVerify(q) {
+      const artist = artistInput.value.trim();
+      const url = '/track-verify?q=' + encodeURIComponent(q) +
+                  (artist ? '&artist=' + encodeURIComponent(artist) : '');
+      try {
+        const d = await fetch(url).then(r => r.json());
+        if (d.status === 'not_found') { tvShow('hide'); return; }
+        tvShow('result', d);
+        // Auto-check: trigger full verification automatically
+        const fd = new FormData();
+        fd.append('song',   songInput.value.trim() || d.song);
+        fd.append('artist', artist || d.artist);
+        await autoCheck(fd);
+      } catch (_) { tvShow('hide'); }
+    }
+
+    // ── Song autocomplete (MusicBrainz) ───────────────────────────────────────
+    let songTimer = null;
+    songInput.addEventListener('input', () => {
+      clearTimeout(songTimer);
+      clearTimeout(tvTimer);
+      const q = songInput.value.trim();
+      if (q.length < 2) { hide(songSugBox, songRow); tvShow('hide'); return; }
+      songRow.classList.add('loading');
+      songTimer = setTimeout(() => fetchSongSug(q), 400);
+      // Verifica album con leggero delay aggiuntivo
+      tvTimer = setTimeout(() => { tvShow('loading'); fetchTrackVerify(q); }, 600);
+    });
+    songInput.addEventListener('blur', () => setTimeout(() => hide(songSugBox, songRow), 180));
+
+    async function fetchSongSug(q) {
+      const artist = artistInput.value.trim();
+      const url = '/song-suggest?q=' + encodeURIComponent(q) +
+                  (artist ? '&artist=' + encodeURIComponent(artist) : '');
+      try {
+        const data = await fetch(url).then(r => r.json());
+        songRow.classList.remove('loading');
+        renderSongSug(data);
+      } catch (_) { songRow.classList.remove('loading'); }
+    }
+
+    function renderSongSug(items) {
+      if (!items.length) { hide(songSugBox, songRow); return; }
+      songSugBox.innerHTML = items.map(it => {
+        const rc = it.in_scaruffi ? ratingClass(it.rating) : 'r-none';
+        const badge = it.in_scaruffi
+          ? `<span class="sug-rating ${rc}">${it.rating}/10</span>`
+          : `<span class="sug-rating r-none">–</span>`;
+        return `<div class="suggestion-item" tabindex="0"
+                     data-song="${esc(it.title)}" data-artist="${esc(it.artist)}" data-album="${esc(it.album)}">
+          <span class="sug-artist">${esc(it.title)}</span>
+          <span class="sug-detail">${esc(it.artist)} — ${esc(it.album)}${it.year?' ('+it.year+')':''}</span>
+          ${badge}
+        </div>`;
+      }).join('');
+      songSugBox.classList.remove('hidden');
+      songSugBox.querySelectorAll('.suggestion-item').forEach(el => {
+        el.addEventListener('mousedown', () => {
+          songInput.value   = el.dataset.song;
+          artistInput.value = el.dataset.artist;
+          if (!albumInput.value) albumInput.value = el.dataset.album;
+          hide(songSugBox, songRow);
+        });
+      });
+    }
+
+    // ── Live match banner ─────────────────────────────────────────────────────
+    function showLM(item) {
+      if (!item) { hideLM(); return; }
+      const rc = item.top_rating >= 6 ? 'badge-gold' : 'badge-red';
+      liveMatch.innerHTML =
+        `<span class="lm-label">Scaruffi DB</span>
+         <strong>${esc(item.artist)}</strong> — <em>${esc(item.top_album)}</em> (${item.year||'?'})
+         <span class="badge ${rc}" style="margin-left:6px">${item.top_rating}/10</span>`;
+      liveMatch.classList.remove('hidden');
+    }
+    function hideLM() { liveMatch.classList.add('hidden'); }
+
+    function hide(box, row) {
+      box.classList.add('hidden'); box.innerHTML = '';
+      row && row.classList.remove('loading');
+    }
+
+    // ── Form submit (disabled — tutto è real-time) ────────────────────────────
+    form.addEventListener('submit', e => e.preventDefault());
+
+    // ── Result rendering ──────────────────────────────────────────────────────
+    function renderResult(r) {
+      if (['error', 'not_found', 'not_in_scaruffi'].includes(r.status)) {
+        const cls = r.status === 'not_in_scaruffi' ? 'result-warning' : 'result-error';
+        let html = `<div class="result-card ${cls} result-pop"><p class="result-msg">${esc(r.message)}</p>`;
+        if (r.status === 'not_in_scaruffi' && (r.song || r.scaruffi_album)) {
+          html += `<div class="detail-grid">
+            ${r.song    ? row('Brano trovato', r.song)   : ''}
+            ${r.artist  ? row('Artista',       r.artist) : ''}
+            ${r.album   ? row('Album (MB)',    r.album + (r.album_year?' ('+r.album_year+')':'')) : ''}
+          </div>`;
+        }
+        html += '</div>';
+        resultBox.innerHTML = html; return;
+      }
+
+      const isYes  = r.status === 'yes';
+      const isAlbum = r.mode === 'album';
+      const scaleId = 'rs_' + Date.now();
+
+      const ratingPillCls = r.rating >= 6 ? 'rpill-gold' : 'rpill-red';
+
+      let detailRows = '';
+      if (isAlbum) {
+        detailRows = `
+          ${row('Artista',  r.scaruffi_artist)}
+          ${row('Album',    r.scaruffi_album + (r.scaruffi_year ? ' <span class="dv-year">(' + r.scaruffi_year + ')</span>' : ''))}
+        `;
+      } else {
+        detailRows = `
+          ${row('Brano',    r.song)}
+          ${row('Artista',  r.artist)}
+          ${r.album ? row('Album (MB)', r.album + (r.album_year ? ' <span class="dv-year">(' + r.album_year + ')</span>' : '')) : ''}
+          ${row('Scaruffi', r.scaruffi_album + (r.scaruffi_year ? ' <span class="dv-year">(' + r.scaruffi_year + ')</span>' : ''))}
+        `;
+      }
+
+      resultBox.innerHTML = `
+        <div class="result-card ${isYes ? 'result-yes' : 'result-no'} result-pop">
+          <div class="result-top">
+            <div class="verdict">${isYes ? '✓ AMMESSO' : '✗ NON AMMESSO'}</div>
+            <div class="rating-pill ${ratingPillCls}">${r.rating}<span class="rpill-denom">/10</span></div>
+          </div>
+          <p class="result-reason">${esc(r.reason)}</p>
+          <div class="detail-grid">${detailRows}</div>
+        </div>`;
+    }
+
+    function renderError(msg) {
+      resultBox.innerHTML = `<div class="result-card result-error"><p class="result-msg">${esc(msg)}</p></div>`;
+    }
+    function row(label, value) {
+      return `<div class="detail-row"><span class="detail-label">${esc(label)}</span><span class="detail-value">${value}</span></div>`;
+    }
+    function esc(s) {
+      return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // ── Keyboard navigation helper ─────────────────────────────────────────────
+    function makeKeyNav(input, sugBox, onSelect) {
+      input.addEventListener('keydown', e => {
+        const items = Array.from(sugBox.querySelectorAll('.suggestion-item'));
+        if (!items.length || sugBox.classList.contains('hidden')) {
+          if (e.key === 'Escape') { sugBox.classList.add('hidden'); sugBox.innerHTML = ''; }
+          return;
+        }
+        const activeEl = sugBox.querySelector('.sug-active');
+        let idx = items.indexOf(activeEl);
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (activeEl) activeEl.classList.remove('sug-active');
+          idx = (idx + 1) % items.length;
+          items[idx].classList.add('sug-active');
+          items[idx].scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (activeEl) activeEl.classList.remove('sug-active');
+          idx = idx <= 0 ? items.length - 1 : idx - 1;
+          items[idx].classList.add('sug-active');
+          items[idx].scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'Enter') {
+          if (activeEl) {
+            e.preventDefault();
+            onSelect(activeEl);
+          }
+        } else if (e.key === 'Escape') {
+          sugBox.classList.add('hidden');
+          sugBox.innerHTML = '';
+        }
+      });
+    }
+
+    // Collega la navigazione tastiera ai 3 dropdown esistenti
+    makeKeyNav(artistInput, artistSugBox, el => el.dispatchEvent(new MouseEvent('mousedown')));
+    makeKeyNav(albumInput,  albumSugBox,  el => el.dispatchEvent(new MouseEvent('mousedown')));
+    makeKeyNav(songInput,   songSugBox,   el => el.dispatchEvent(new MouseEvent('mousedown')));
+
+  })();
+  </script>
+
+  <!-- Scroll reveal per la galleria -->
+  <script>
+  (function() {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e, i) => {
+        if (e.isIntersecting) {
+          setTimeout(() => e.target.classList.add('visible'), i * 80);
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+  })();
+  </script>
+</body>
+</html>

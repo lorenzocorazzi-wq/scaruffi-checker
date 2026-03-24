@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#07090f">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Scopri — Scaruffi Checker</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    /* ══════════════════════════════════════════════════════════════
+       SCOPRI — page-specific styles
+       ══════════════════════════════════════════════════════════════ */
+
+    /* Override max-width for this wider page */
+    main.scopri-main {
+      max-width: 960px;
+    }
+
+    /* ── Section headings ───────────────────────────────────────── */
+    .scopri-section {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .scopri-section h2 {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .scopri-section h2 .section-icon {
+      font-size: 1rem;
+    }
+
+    /* ── SECTION 1 — Sorprendimi ─────────────────────────────────── */
+    .surprise-area {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .btn-surprise {
+      background: linear-gradient(135deg, #b07d22 0%, var(--gold) 50%, #fcd34d 100%);
+      color: #07090f;
+      font-family: var(--font);
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      border: none;
+      border-radius: 14px;
+      padding: 18px 48px;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+      box-shadow: 0 0 32px rgba(245,158,11,0.35), 0 4px 16px rgba(0,0,0,0.5);
+      user-select: none;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-surprise::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent 60%);
+      pointer-events: none;
+    }
+
+    .btn-surprise:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 0 48px rgba(245,158,11,0.55), 0 8px 24px rgba(0,0,0,0.6);
+    }
+
+    .btn-surprise:active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    .btn-surprise:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Slider */
+    .slider-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .slider-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .slider-label span {
+      font-family: var(--mono);
+      color: var(--gold);
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    #rating-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--gold) var(--fill, 0%), var(--border) var(--fill, 0%));
+      outline: none;
+      cursor: pointer;
+    }
+
+    #rating-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 12px rgba(245,158,11,0.6);
+      border: 2px solid #07090f;
+      cursor: pointer;
+      transition: box-shadow 0.15s ease;
+    }
+
+    #rating-slider::-webkit-slider-thumb:hover {
+      box-shadow: 0 0 20px rgba(245,158,11,0.9);
+    }
+
+    #rating-slider::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 12px rgba(245,158,11,0.6);
+      border: 2px solid #07090f;
+      cursor: pointer;
+    }
+
+    /* Result card with flip animation */
+    .result-area {
+      width: 100%;
+      max-width: 480px;
+      perspective: 1000px;
+      min-height: 180px;
+    }
+
+    .result-card-wrap {
+      position: relative;
+      width: 100%;
+      transform-style: preserve-3d;
+    }
+
+    .result-card {
+      background: linear-gradient(135deg, #111827 0%, #0d1117 100%);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      opacity: 0;
+      transform: rotateY(90deg) scale(0.85);
+      transition: opacity 0.35s ease, transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      pointer-events: none;
+    }
+
+    .result-card.visible {
+      opacity: 1;
+      transform: rotateY(0deg) scale(1);
+      pointer-events: auto;
+    }
+
+    .result-card.exiting {
+      opacity: 0;
+      transform: rotateY(-90deg) scale(0.85);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .result-artist {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .result-album {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+
+    .result-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .result-year {
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .rating-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1px solid currentColor;
+    }
+
+    .rating-pill.r-low   { color: #60a5fa; border-color: rgba(96,165,250,0.4); background: rgba(59,130,246,0.1); }
+    .rating-pill.r-mid   { color: var(--gold); border-color: rgba(245,158,11,0.4); background: rgba(245,158,11,0.1); }
+    .rating-pill.r-high  { color: #c084fc; border-color: rgba(192,132,252,0.4); background: rgba(167,139,250,0.12); }
+    .rating-pill.r-top   { color: #fff; border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.08); }
+
+    .result-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 16px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--gold);
+      text-decoration: none;
+      padding: 6px 14px;
+      border: 1px solid rgba(245,158,11,0.3);
+      border-radius: 6px;
+      background: rgba(245,158,11,0.08);
+      transition: background var(--transition), border-color var(--transition);
+    }
+
+    .result-link:hover {
+      background: rgba(245,158,11,0.15);
+      border-color: rgba(245,158,11,0.6);
+    }
+
+    .result-empty {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      padding: 24px 0;
+    }
+
+    /* ── SECTION 2 — Hall of Fame ────────────────────────────────── */
+    .hof-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .hof-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .hof-card:hover {
+      transform: translateY(-3px);
+    }
+
+    /* Gold border glow */
+    .hof-card.glow-gold {
+      border-color: rgba(245,158,11,0.45);
+      box-shadow: 0 0 18px rgba(245,158,11,0.12), inset 0 0 18px rgba(245,158,11,0.04);
+    }
+
+    .hof-card.glow-gold:hover {
+      box-shadow: 0 0 32px rgba(245,158,11,0.25), inset 0 0 24px rgba(245,158,11,0.07);
+    }
+
+    /* Viola border glow */
+    .hof-card.glow-violet {
+      border-color: rgba(167,139,250,0.5);
+      box-shadow: 0 0 18px rgba(167,139,250,0.15), inset 0 0 18px rgba(167,139,250,0.05);
+    }
+
+    .hof-card.glow-violet:hover {
+      box-shadow: 0 0 32px rgba(167,139,250,0.28), inset 0 0 24px rgba(167,139,250,0.08);
+    }
+
+    /* Bianco pulsante per 10/10 */
+    .hof-card.glow-white {
+      border-color: rgba(255,255,255,0.55);
+      animation: pulse-white 2.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse-white {
+      0%, 100% { box-shadow: 0 0 18px rgba(255,255,255,0.15), inset 0 0 14px rgba(255,255,255,0.04); }
+      50%       { box-shadow: 0 0 42px rgba(255,255,255,0.38), inset 0 0 28px rgba(255,255,255,0.10); }
+    }
+
+    .hof-rating {
+      font-family: var(--mono);
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .glow-gold   .hof-rating { color: var(--gold); text-shadow: 0 0 16px rgba(245,158,11,0.6); }
+    .glow-violet .hof-rating { color: #c084fc;     text-shadow: 0 0 16px rgba(192,132,252,0.6); }
+    .glow-white  .hof-rating { color: #fff;         text-shadow: 0 0 20px rgba(255,255,255,0.9), 0 0 40px rgba(255,255,255,0.5); }
+
+    .hof-album {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+    }
+
+    .hof-artist {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .hof-year {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: auto;
+      padding-top: 8px;
+    }
+
+    /* Perfect 10 badge */
+    .hof-card.glow-white::after {
+      content: '✦ PERFECT';
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.6);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 4px;
+      padding: 2px 6px;
+    }
+
+    /* Loading skeleton */
+    .skeleton {
+      background: linear-gradient(90deg, var(--surface) 25%, #1e2d45 50%, var(--surface) 75%);
+      background-size: 200% 100%;
+      animation: skeleton-shine 1.4s infinite;
+      border-radius: 4px;
+      color: transparent !important;
+    }
+
+    @keyframes skeleton-shine {
+      0%   { background-position: 200% center; }
+      100% { background-position: -200% center; }
+    }
+
+    .hof-empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      color: var(--muted);
+      padding: 40px;
+      font-size: 0.9rem;
+    }
+
+    /* ── SECTION 3 — Artisti simili ──────────────────────────────── */
+    .similar-controls {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .similar-input-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .similar-input-wrap label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .similar-input-wrap input {
+      width: 100%;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 0.95rem;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+    .similar-input-wrap input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(245,158,11,0.12);
+    }
+
+    .similar-input-wrap input::placeholder {
+      color: var(--muted);
+    }
+
+    /* Autocomplete dropdown */
+    .autocomplete-list {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: #111827;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      z-index: 200;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      display: none;
+    }
+
+    .autocomplete-list.open {
+      display: block;
+    }
+
+    .autocomplete-item {
+      padding: 10px 14px;
+      font-size: 0.9rem;
+      color: var(--text);
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+
+    .autocomplete-item:hover,
+    .autocomplete-item.active {
+      background: rgba(245,158,11,0.1);
+      color: var(--gold);
+    }
+
+    /* Rating filter */
+    .similar-rating-wrap label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .similar-rating-wrap select {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 0.9rem;
+      padding: 10px 14px;
+      outline: none;
+      cursor: pointer;
+      transition: border-color var(--transition);
+    }
+
+    .similar-rating-wrap select:focus {
+      border-color: var(--gold);
+    }
+
+    .btn-similar {
+      background: rgba(245,158,11,0.12);
+      border: 1px solid rgba(245,158,11,0.35);
+      border-radius: var(--radius-sm);
+      color: var(--gold);
+      font-family: var(--font);
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 10px 22px;
+      cursor: pointer;
+      transition: background var(--transition), border-color var(--transition), transform 0.1s ease;
+      white-space: nowrap;
+      align-self: flex-end;
+    }
+
+    .btn-similar:hover {
+      background: rgba(245,158,11,0.2);
+      border-color: rgba(245,158,11,0.6);
+    }
+
+    .btn-similar:active {
+      transform: scale(0.97);
+    }
+
+    .btn-similar:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Similar results grid */
+    .similar-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px;
+      margin-top: 4px;
+    }
+
+    .similar-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.3s ease, transform 0.3s ease, box-shadow 0.2s ease;
+    }
+
+    .similar-card.in {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .similar-card:hover {
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      border-color: #2e3f5a;
+    }
+
+    .similar-card .sc-rank {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+
+    .similar-card .sc-artist {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--muted);
+    }
+
+    .similar-card .sc-album {
+      font-size: 0.97rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+    }
+
+    .similar-card .sc-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .similar-card .sc-year {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .similar-empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      color: var(--muted);
+      padding: 32px;
+      font-size: 0.9rem;
+    }
+
+    /* ── Divider ────────────────────────────────────────────────── */
+    .scopri-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+      margin: 8px 0;
+    }
+
+    /* ── nav active override ─────────────────────────────────────── */
+    nav a.nav-active {
+      color: var(--gold);
+      background: rgba(245,158,11,0.08);
+    }
+
+    /* ── Spinner ─────────────────────────────────────────────────── */
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(245,158,11,0.3);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ── Error pill ──────────────────────────────────────────────── */
+    .error-msg {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.82rem;
+      color: #f87171;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 6px;
+      padding: 6px 12px;
+    }
+
+    /* ── Responsive ──────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .hof-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      }
+      .similar-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .similar-controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .btn-similar {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="particle-canvas" aria-hidden="true"></canvas>
+
+  <header>
+    <div class="header-inner">
+      <h1>Scaruffi Checker</h1>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <nav id="main-nav">
+        <a href="/">Setlist</a>
+        <a href="/classifica">Classifica</a>
+        <a href="/stats">Stats</a>
+        <a href="/scopri" class="nav-active">Scopri</a>
+        <a href="/quiz">Quiz</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="scopri-main">
+
+    <!-- ══════════════════════════════════════════════
+         SEZIONE 1 — SORPRENDIMI
+         ══════════════════════════════════════════════ -->
+    <section class="scopri-section" id="section-surprise">
+      <h2><span class="section-icon">🎲</span> Sorprendimi</h2>
+
+      <div class="surprise-area">
+        <button class="btn-surprise" id="btn-surprise">🎲 SORPRENDIMI</button>
+
+        <div class="slider-wrap">
+          <div class="slider-label">
+            Rating minimo <span id="slider-val">7.0</span>
+          </div>
+          <input type="range" id="rating-slider"
+                 min="7" max="10" step="0.5" value="7"
+                 aria-label="Rating minimo">
+        </div>
+
+        <div class="result-area" id="result-area" aria-live="polite">
+          <!-- card injected by JS -->
+        </div>
+      </div>
+    </section>
+
+    <div class="scopri-divider"></div>
+
+    <!-- ══════════════════════════════════════════════
+         SEZIONE 2 — HALL OF FAME
+         ══════════════════════════════════════════════ -->
+    <section class="scopri-section" id="section-hof">
+      <h2><span class="section-icon">🏆</span> Hall of Fame <small style="font-size:0.65em;font-weight:400;color:var(--muted);margin-left:8px;text-transform:none;letter-spacing:0;">rating ≥ 9</small></h2>
+
+      <div class="hof-grid" id="hof-grid">
+        <!-- skeleton cards while loading -->
+        <div class="hof-card glow-gold" id="hof-loading-msg">
+          <div style="color:var(--muted);font-size:0.85rem;display:flex;align-items:center;gap:8px;grid-column:1/-1">
+            <span class="spinner"></span> Caricamento Hall of Fame…
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="scopri-divider"></div>
+
+    <!-- ══════════════════════════════════════════════
+         SEZIONE 3 — ARTISTI SIMILI
+         ══════════════════════════════════════════════ -->
+    <section class="scopri-section" id="section-similar">
+      <h2><span class="section-icon">🔗</span> Artisti simili</h2>
+
+      <div class="similar-controls">
+        <div class="similar-input-wrap" id="artist-input-wrap">
+          <label for="similar-artist">Cerca artista…</label>
+          <input type="text" id="similar-artist"
+                 placeholder="es. Can, Amon Tobin, Autechre…"
+                 autocomplete="off"
+                 aria-autocomplete="list"
+                 aria-controls="autocomplete-list">
+          <div class="autocomplete-list" id="autocomplete-list" role="listbox"></div>
+        </div>
+
+        <div class="similar-rating-wrap">
+          <label for="similar-rating">Rating minimo</label>
+          <select id="similar-rating">
+            <option value="7">≥ 7</option>
+            <option value="7.5">≥ 7.5</option>
+            <option value="8">≥ 8</option>
+            <option value="8.5">≥ 8.5</option>
+            <option value="9">≥ 9</option>
+          </select>
+        </div>
+
+        <button class="btn-similar" id="btn-similar">Trova simili →</button>
+      </div>
+
+      <div class="similar-grid" id="similar-grid" aria-live="polite">
+        <!-- results injected by JS -->
+      </div>
+    </section>
+
+  </main>
+
+  <script src="/static/particles.js"></script>
+  <script>
+  (() => {
+    'use strict';
+
+    /* ══════════════════════════════════════════════════════════════
+       UTILITIES
+       ══════════════════════════════════════════════════════════════ */
+
+    /** Returns CSS class for a rating pill based on value */
+    function ratingClass(r) {
+      if (r >= 10)  return 'r-top';
+      if (r >= 9)   return 'r-high';
+      if (r >= 8)   return 'r-mid';
+      return 'r-low';
+    }
+
+    /** Returns glow class for Hall of Fame cards */
+    function hofGlowClass(r) {
+      if (r >= 10)  return 'glow-white';
+      if (r >= 9.5) return 'glow-violet';
+      return 'glow-gold';
+    }
+
+    /** Build a scaruffi search URL for an artist */
+    function scaruffiUrl(artist) {
+      const q = encodeURIComponent((artist || '').toLowerCase().replace(/\s+/g, '+'));
+      return `https://www.scaruffi.com/search.html?q=${q}`;
+    }
+
+    /** Formats a rating to one decimal */
+    function fmt(r) {
+      return parseFloat(r).toFixed(1);
+    }
+
+    /** Show an error message in a container */
+    function showError(container, msg) {
+      container.innerHTML = `<div class="error-msg">⚠ ${msg}</div>`;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       SEZIONE 1 — SORPRENDIMI
+       ══════════════════════════════════════════════════════════════ */
+
+    const btnSurprise   = document.getElementById('btn-surprise');
+    const ratingSlider  = document.getElementById('rating-slider');
+    const sliderVal     = document.getElementById('slider-val');
+    const resultArea    = document.getElementById('result-area');
+
+    let currentCard     = null;
+    let isFetching      = false;
+
+    /* Update slider fill & label */
+    function updateSlider() {
+      const min  = parseFloat(ratingSlider.min);
+      const max  = parseFloat(ratingSlider.max);
+      const val  = parseFloat(ratingSlider.value);
+      const pct  = ((val - min) / (max - min)) * 100;
+      ratingSlider.style.setProperty('--fill', pct + '%');
+      sliderVal.textContent = fmt(val);
+    }
+
+    ratingSlider.addEventListener('input', updateSlider);
+    updateSlider();
+
+    /* Build a result card element */
+    function buildCard(data) {
+      const div = document.createElement('div');
+      div.className = 'result-card';
+
+      const r    = parseFloat(data.rating);
+      const pill = ratingClass(r);
+
+      div.innerHTML = `
+        <div class="result-artist">${escHtml(data.artist || '—')}</div>
+        <div class="result-album">${escHtml(data.album || data.title || '—')}</div>
+        <div class="result-meta">
+          <span class="result-year">${escHtml(String(data.year || ''))}</span>
+          <span class="rating-pill ${pill}">★ ${fmt(r)}</span>
+        </div>
+        <a class="result-link"
+           href="${escAttr(scaruffiUrl(data.artist))}"
+           target="_blank" rel="noopener noreferrer">
+          🔍 Cerca su Scaruffi ↗
+        </a>
+      `;
+      return div;
+    }
+
+    async function fetchRandom() {
+      if (isFetching) return;
+      isFetching = true;
+      btnSurprise.disabled = true;
+      btnSurprise.innerHTML = '<span class="spinner"></span> Caricamento…';
+
+      const minRating = parseFloat(ratingSlider.value);
+
+      /* Exit old card */
+      if (currentCard) {
+        currentCard.classList.add('exiting');
+        await sleep(260);
+        currentCard.remove();
+        currentCard = null;
+      }
+
+      try {
+        const res  = await fetch(`/api/random?min_rating=${minRating}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        const card = buildCard(data);
+        resultArea.appendChild(card);
+        /* Trigger reflow to start transition */
+        card.getBoundingClientRect();
+        card.classList.add('visible');
+        currentCard = card;
+
+      } catch (err) {
+        const errDiv = document.createElement('div');
+        errDiv.className = 'result-empty';
+        errDiv.innerHTML = `<span class="error-msg">⚠ Impossibile caricare: ${escHtml(err.message)}</span>`;
+        resultArea.appendChild(errDiv);
+        currentCard = errDiv;
+      } finally {
+        isFetching = false;
+        btnSurprise.disabled = false;
+        btnSurprise.innerHTML = '🎲 SORPRENDIMI';
+      }
+    }
+
+    btnSurprise.addEventListener('click', fetchRandom);
+
+    /* ══════════════════════════════════════════════════════════════
+       SEZIONE 2 — HALL OF FAME
+       ══════════════════════════════════════════════════════════════ */
+
+    const hofGrid = document.getElementById('hof-grid');
+
+    function buildHofCard(item) {
+      const r    = parseFloat(item.rating);
+      const glow = hofGlowClass(r);
+      const div  = document.createElement('div');
+      div.className = `hof-card ${glow}`;
+      div.innerHTML = `
+        <div class="hof-rating">${fmt(r)}</div>
+        <div class="hof-album">${escHtml(item.album || item.title || '—')}</div>
+        <div class="hof-artist">${escHtml(item.artist || '—')}</div>
+        <div class="hof-year">${escHtml(String(item.year || ''))}</div>
+      `;
+      return div;
+    }
+
+    async function loadHallOfFame() {
+      try {
+        const res  = await fetch('/api/hall-of-fame');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        hofGrid.innerHTML = '';
+
+        const albums = Array.isArray(data) ? data : (data.albums || data.results || []);
+
+        if (!albums.length) {
+          hofGrid.innerHTML = '<div class="hof-empty">Nessun album trovato con rating ≥ 9.</div>';
+          return;
+        }
+
+        /* Sort descending by rating */
+        albums.sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating));
+
+        albums.forEach((item, i) => {
+          const card = buildHofCard(item);
+          card.style.animationDelay = `${i * 40}ms`;
+          hofGrid.appendChild(card);
+        });
+
+      } catch (err) {
+        hofGrid.innerHTML = `<div class="hof-empty"><span class="error-msg">⚠ ${escHtml(err.message)}</span></div>`;
+      }
+    }
+
+    /* Load on page ready */
+    loadHallOfFame();
+
+    /* ══════════════════════════════════════════════════════════════
+       SEZIONE 3 — ARTISTI SIMILI
+       ══════════════════════════════════════════════════════════════ */
+
+    const similarArtistInput = document.getElementById('similar-artist');
+    const autocompleteList   = document.getElementById('autocomplete-list');
+    const similarRating      = document.getElementById('similar-rating');
+    const btnSimilar         = document.getElementById('btn-similar');
+    const similarGrid        = document.getElementById('similar-grid');
+
+    let acAbortController = null;
+    let acActiveIndex     = -1;
+    let acItems           = [];
+    let selectedArtist    = '';
+
+    /* Autocomplete */
+    async function fetchSuggestions(q) {
+      if (acAbortController) acAbortController.abort();
+      acAbortController = new AbortController();
+      try {
+        const res  = await fetch(`/artist-suggest?q=${encodeURIComponent(q)}`,
+                                 { signal: acAbortController.signal });
+        if (!res.ok) return [];
+        const data = await res.json();
+        return Array.isArray(data) ? data : (data.suggestions || data.results || []);
+      } catch (e) {
+        if (e.name !== 'AbortError') console.error('Autocomplete error:', e);
+        return [];
+      }
+    }
+
+    function renderAutocomplete(items) {
+      acItems       = items;
+      acActiveIndex = -1;
+      autocompleteList.innerHTML = '';
+
+      if (!items.length) {
+        autocompleteList.classList.remove('open');
+        return;
+      }
+
+      items.forEach((item, idx) => {
+        const label  = typeof item === 'string' ? item : (item.artist || item.name || item);
+        const div    = document.createElement('div');
+        div.className = 'autocomplete-item';
+        div.setAttribute('role', 'option');
+        div.textContent = label;
+        div.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          selectArtist(label);
+        });
+        autocompleteList.appendChild(div);
+      });
+
+      autocompleteList.classList.add('open');
+    }
+
+    function selectArtist(name) {
+      selectedArtist = name;
+      similarArtistInput.value = name;
+      autocompleteList.classList.remove('open');
+      acItems = [];
+      acActiveIndex = -1;
+    }
+
+    function updateActiveItem() {
+      const items = autocompleteList.querySelectorAll('.autocomplete-item');
+      items.forEach((el, i) => {
+        el.classList.toggle('active', i === acActiveIndex);
+      });
+    }
+
+    let acDebounceTimer = null;
+
+    similarArtistInput.addEventListener('input', (e) => {
+      selectedArtist = '';
+      const q = e.target.value.trim();
+      if (!q) {
+        autocompleteList.classList.remove('open');
+        return;
+      }
+      clearTimeout(acDebounceTimer);
+      acDebounceTimer = setTimeout(async () => {
+        const suggestions = await fetchSuggestions(q);
+        renderAutocomplete(suggestions);
+      }, 220);
+    });
+
+    similarArtistInput.addEventListener('keydown', (e) => {
+      const items = autocompleteList.querySelectorAll('.autocomplete-item');
+      if (!items.length) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        acActiveIndex = Math.min(acActiveIndex + 1, items.length - 1);
+        updateActiveItem();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        acActiveIndex = Math.max(acActiveIndex - 1, -1);
+        updateActiveItem();
+      } else if (e.key === 'Enter') {
+        if (acActiveIndex >= 0 && items[acActiveIndex]) {
+          e.preventDefault();
+          selectArtist(items[acActiveIndex].textContent);
+        } else {
+          autocompleteList.classList.remove('open');
+          fetchSimilar();
+        }
+      } else if (e.key === 'Escape') {
+        autocompleteList.classList.remove('open');
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!document.getElementById('artist-input-wrap').contains(e.target)) {
+        autocompleteList.classList.remove('open');
+      }
+    });
+
+    /* Fetch similar artists */
+    async function fetchSimilar() {
+      const artist = selectedArtist || similarArtistInput.value.trim();
+      if (!artist) {
+        showError(similarGrid, 'Inserisci il nome di un artista.');
+        return;
+      }
+      const rating = parseFloat(similarRating.value);
+
+      btnSimilar.disabled = true;
+      btnSimilar.innerHTML = '<span class="spinner"></span> Ricerca…';
+      similarGrid.innerHTML = '';
+
+      try {
+        const url = `/api/similar?artist=${encodeURIComponent(artist)}&rating=${rating}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        const results = Array.isArray(data) ? data : (data.similar || data.results || []);
+
+        if (!results.length) {
+          similarGrid.innerHTML = '<div class="similar-empty">Nessun artista simile trovato.</div>';
+          return;
+        }
+
+        const shown = results.slice(0, 5);
+        shown.forEach((item, i) => {
+          const card = buildSimilarCard(item, i + 1);
+          similarGrid.appendChild(card);
+          /* Staggered entrance */
+          setTimeout(() => card.classList.add('in'), i * 80);
+        });
+
+      } catch (err) {
+        similarGrid.innerHTML = `<div class="similar-empty"><span class="error-msg">⚠ ${escHtml(err.message)}</span></div>`;
+      } finally {
+        btnSimilar.disabled = false;
+        btnSimilar.innerHTML = 'Trova simili →';
+      }
+    }
+
+    function buildSimilarCard(item, rank) {
+      const r    = parseFloat(item.rating);
+      const pill = ratingClass(r);
+      const div  = document.createElement('div');
+      div.className = 'similar-card';
+      div.innerHTML = `
+        <div class="sc-rank">#${rank}</div>
+        <div class="sc-artist">${escHtml(item.artist || '—')}</div>
+        <div class="sc-album">${escHtml(item.album || item.title || '—')}</div>
+        <div class="sc-meta">
+          <span class="sc-year">${escHtml(String(item.year || ''))}</span>
+          <span class="rating-pill ${pill}">★ ${fmt(r)}</span>
+        </div>
+      `;
+      return div;
+    }
+
+    btnSimilar.addEventListener('click', fetchSimilar);
+
+    similarArtistInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !autocompleteList.classList.contains('open')) {
+        fetchSimilar();
+      }
+    });
+
+    /* ══════════════════════════════════════════════════════════════
+       HELPERS
+       ══════════════════════════════════════════════════════════════ */
+
+    function sleep(ms) {
+      return new Promise(r => setTimeout(r, ms));
+    }
+
+    function escHtml(str) {
+      return String(str)
+        .replace(/&/g,  '&amp;')
+        .replace(/</g,  '&lt;')
+        .replace(/>/g,  '&gt;')
+        .replace(/"/g,  '&quot;')
+        .replace(/'/g,  '&#39;');
+    }
+
+    function escAttr(str) {
+      return escHtml(str);
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       NAV TOGGLE (mobile hamburger — mirrors index.html logic)
+       ══════════════════════════════════════════════════════════════ */
+    const navToggle = document.getElementById('nav-toggle');
+    const mainNav   = document.getElementById('main-nav');
+
+    if (navToggle && mainNav) {
+      navToggle.addEventListener('click', () => {
+        const open = navToggle.getAttribute('aria-expanded') === 'true';
+        navToggle.setAttribute('aria-expanded', String(!open));
+        mainNav.classList.toggle('nav-open', !open);
+      });
+    }
+
+  })();
+  </script>
+</body>
+</html>

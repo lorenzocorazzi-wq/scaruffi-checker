@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#07090f">
+  <title>Sfida Scaruffi — Quiz</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    /* ── Quiz layout ─────────────────────────────────────────── */
+    .quiz-wrapper {
+      max-width: 860px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    .quiz-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.8rem;
+      flex-wrap: wrap;
+      gap: .6rem;
+    }
+
+    .quiz-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #e8d5a3;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .quiz-score {
+      font-size: 1rem;
+      color: #aaa;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 20px;
+      padding: .3rem .9rem;
+    }
+
+    .quiz-score strong {
+      color: #e8d5a3;
+    }
+
+    .quiz-round {
+      font-size: .85rem;
+      color: #666;
+      text-align: center;
+      margin-bottom: 1.2rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    /* ── Cards ───────────────────────────────────────────────── */
+    .quiz-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin-bottom: 1.4rem;
+    }
+
+    @media (max-width: 560px) {
+      .quiz-cards { grid-template-columns: 1fr; }
+    }
+
+    .album-card {
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 12px;
+      padding: 1.6rem 1.2rem;
+      cursor: pointer;
+      transition: border-color .2s, transform .15s, box-shadow .2s;
+      position: relative;
+      overflow: hidden;
+      user-select: none;
+      perspective: 800px;
+    }
+
+    .album-card:hover:not(.revealed):not(.disabled) {
+      border-color: rgba(232,213,163,.4);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0,0,0,.4);
+    }
+
+    .album-card.selected {
+      border-color: rgba(232,213,163,.7);
+      box-shadow: 0 0 0 2px rgba(232,213,163,.25);
+    }
+
+    .album-card.disabled {
+      cursor: default;
+    }
+
+    /* Revealed states */
+    .album-card.correct {
+      border-color: #4caf50;
+      box-shadow: 0 0 20px rgba(76,175,80,.25);
+    }
+
+    .album-card.wrong {
+      border-color: #ef5350;
+      box-shadow: 0 0 20px rgba(239,83,80,.2);
+    }
+
+    .album-card.neutral {
+      opacity: .6;
+    }
+
+    /* Card inner content */
+    .card-label {
+      font-size: .7rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: #666;
+      margin-bottom: .8rem;
+    }
+
+    .card-artist {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #e8e8e8;
+      margin-bottom: .3rem;
+      line-height: 1.3;
+    }
+
+    .card-album {
+      font-size: .92rem;
+      color: #aaa;
+      margin-bottom: .25rem;
+      font-style: italic;
+    }
+
+    .card-year {
+      font-size: .8rem;
+      color: #666;
+    }
+
+    /* Rating reveal — flip animation */
+    .card-rating-wrap {
+      margin-top: 1.1rem;
+      height: 52px;
+      perspective: 600px;
+    }
+
+    .card-rating-inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform .55s cubic-bezier(.4,0,.2,1);
+    }
+
+    .card-rating-inner.flipped {
+      transform: rotateX(180deg);
+    }
+
+    .card-rating-front,
+    .card-rating-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+    }
+
+    .card-rating-front {
+      background: rgba(255,255,255,.06);
+      color: #555;
+      font-size: .8rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .card-rating-back {
+      transform: rotateX(180deg);
+      background: rgba(255,255,255,.08);
+    }
+
+    .rating-number {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #e8d5a3;
+      line-height: 1;
+    }
+
+    .rating-slash {
+      font-size: 1rem;
+      color: #666;
+      margin: 0 .1rem 0 .15rem;
+    }
+
+    .rating-denom {
+      font-size: 1rem;
+      color: #666;
+    }
+
+    /* Result badge on card */
+    .card-badge {
+      position: absolute;
+      top: .9rem;
+      right: .9rem;
+      font-size: 1.3rem;
+      opacity: 0;
+      transform: scale(.5);
+      transition: opacity .3s .4s, transform .3s .4s;
+    }
+
+    .revealed .card-badge {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* ── Controls ────────────────────────────────────────────── */
+    .quiz-controls {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .btn-next {
+      background: linear-gradient(135deg, #e8d5a3, #c9a84c);
+      color: #07090f;
+      border: none;
+      border-radius: 8px;
+      padding: .75rem 2rem;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: .05em;
+      transition: opacity .2s, transform .15s;
+      display: none;
+    }
+
+    .btn-next:hover { opacity: .88; transform: translateY(-1px); }
+    .btn-next.visible { display: inline-block; }
+
+    /* ── Feedback bar ────────────────────────────────────────── */
+    .feedback-bar {
+      text-align: center;
+      min-height: 2rem;
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: .5rem;
+      transition: opacity .3s;
+    }
+
+    .feedback-bar.correct { color: #66bb6a; }
+    .feedback-bar.wrong   { color: #ef5350; }
+
+    /* ── Loading skeleton ────────────────────────────────────── */
+    .skeleton {
+      background: linear-gradient(90deg, rgba(255,255,255,.04) 25%, rgba(255,255,255,.09) 50%, rgba(255,255,255,.04) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 4px;
+      height: 1em;
+      margin-bottom: .5rem;
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ── Final screen ────────────────────────────────────────── */
+    .quiz-final {
+      display: none;
+      text-align: center;
+      padding: 3rem 1rem;
+    }
+
+    .quiz-final.visible { display: block; }
+
+    .final-score-big {
+      font-size: 4rem;
+      font-weight: 800;
+      color: #e8d5a3;
+      line-height: 1;
+      margin-bottom: .4rem;
+    }
+
+    .final-label {
+      font-size: 1rem;
+      color: #888;
+      margin-bottom: 2rem;
+    }
+
+    .final-comment {
+      font-size: 1.25rem;
+      color: #e8e8e8;
+      font-style: italic;
+      max-width: 500px;
+      margin: 0 auto 2.5rem;
+      line-height: 1.6;
+    }
+
+    .final-comment cite {
+      display: block;
+      margin-top: .7rem;
+      font-size: .85rem;
+      color: #666;
+      font-style: normal;
+    }
+
+    .btn-restart {
+      background: transparent;
+      border: 1px solid rgba(232,213,163,.4);
+      color: #e8d5a3;
+      border-radius: 8px;
+      padding: .7rem 2rem;
+      font-size: .95rem;
+      cursor: pointer;
+      letter-spacing: .05em;
+      transition: background .2s, border-color .2s;
+    }
+
+    .btn-restart:hover {
+      background: rgba(232,213,163,.08);
+      border-color: rgba(232,213,163,.7);
+    }
+
+    /* ── Instruction hint ────────────────────────────────────── */
+    .quiz-hint {
+      text-align: center;
+      color: #555;
+      font-size: .82rem;
+      margin-bottom: 1.2rem;
+      letter-spacing: .04em;
+    }
+
+    /* ── Error state ─────────────────────────────────────────── */
+    .quiz-error {
+      text-align: center;
+      color: #ef5350;
+      padding: 2rem;
+      display: none;
+    }
+    .quiz-error.visible { display: block; }
+
+    /* ── Progress dots ───────────────────────────────────────── */
+    .progress-dots {
+      display: flex;
+      justify-content: center;
+      gap: .4rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.1);
+      transition: background .3s;
+    }
+
+    .dot.done-correct { background: #4caf50; }
+    .dot.done-wrong   { background: #ef5350; }
+    .dot.current      { background: #e8d5a3; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <h1>Scaruffi Checker</h1>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <nav id="main-nav">
+        <a href="/">Setlist</a>
+        <a href="/classifica">Classifica</a>
+        <a href="/stats">Stats</a>
+        <a href="/scopri">Scopri</a>
+        <a href="/quiz" class="nav-active">Quiz</a>
+        <span class="db-status">DB: <strong id="album-count">{{ album_count }}</strong> album</span>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="quiz-wrapper">
+
+      <!-- ── Game area ── -->
+      <div id="quiz-game">
+        <div class="quiz-header">
+          <div class="quiz-title">Sfida Scaruffi</div>
+          <div class="quiz-score">Punteggio: <strong id="score-display">0 / 0</strong></div>
+        </div>
+
+        <div class="progress-dots" id="progress-dots"></div>
+
+        <div class="quiz-round" id="round-label">Round 1 di 10</div>
+
+        <div class="quiz-hint" id="quiz-hint">Quale album ha il rating Scaruffi più alto?</div>
+
+        <div class="quiz-cards" id="quiz-cards">
+          <!-- Cards injected by JS -->
+          <div class="album-card" id="card-0">
+            <div class="card-label">Album A</div>
+            <div class="skeleton" style="height:1.2rem;width:70%;margin-bottom:.6rem"></div>
+            <div class="skeleton" style="height:.9rem;width:55%"></div>
+            <div class="skeleton" style="height:.8rem;width:35%;margin-top:.3rem"></div>
+            <div class="card-rating-wrap"><div class="card-rating-inner"><div class="card-rating-front">?</div><div class="card-rating-back"></div></div></div>
+          </div>
+          <div class="album-card" id="card-1">
+            <div class="card-label">Album B</div>
+            <div class="skeleton" style="height:1.2rem;width:70%;margin-bottom:.6rem"></div>
+            <div class="skeleton" style="height:.9rem;width:55%"></div>
+            <div class="skeleton" style="height:.8rem;width:35%;margin-top:.3rem"></div>
+            <div class="card-rating-wrap"><div class="card-rating-inner"><div class="card-rating-front">?</div><div class="card-rating-back"></div></div></div>
+          </div>
+        </div>
+
+        <div class="feedback-bar" id="feedback-bar"></div>
+
+        <div class="quiz-controls">
+          <button class="btn-next" id="btn-next">Prossima →</button>
+        </div>
+
+        <div class="quiz-error" id="quiz-error">
+          Errore nel caricamento degli album. Assicurati che il DB sia indicizzato.
+          <br><br>
+          <button class="btn-restart" onclick="startRound()">Riprova</button>
+        </div>
+      </div>
+
+      <!-- ── Final screen ── -->
+      <div class="quiz-final" id="quiz-final">
+        <div class="final-score-big" id="final-score-num">0</div>
+        <div class="final-label">corrette su 10</div>
+        <div class="final-comment" id="final-comment"></div>
+        <button class="btn-restart" onclick="restartQuiz()">Gioca ancora</button>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+  (() => {
+    'use strict';
+
+    const TOTAL_ROUNDS = 10;
+    const MIN_RATING = 5;
+
+    let round = 0;
+    let correct = 0;
+    let albums = [];
+    let answered = false;
+    let history = []; // 'correct' | 'wrong'
+
+    // ── DOM refs ──────────────────────────────────────────────────────────────
+    const $cards      = document.getElementById('quiz-cards');
+    const $roundLabel = document.getElementById('round-label');
+    const $scoreDisp  = document.getElementById('score-display');
+    const $feedback   = document.getElementById('feedback-bar');
+    const $btnNext    = document.getElementById('btn-next');
+    const $hint       = document.getElementById('quiz-hint');
+    const $error      = document.getElementById('quiz-error');
+    const $game       = document.getElementById('quiz-game');
+    const $final      = document.getElementById('quiz-final');
+    const $finalNum   = document.getElementById('final-score-num');
+    const $finalCmt   = document.getElementById('final-comment');
+    const $dots       = document.getElementById('progress-dots');
+
+    // ── Fetch helpers ─────────────────────────────────────────────────────────
+    async function fetchRandom() {
+      const r = await fetch(`/api/random?min_rating=${MIN_RATING}`);
+      if (!r.ok) throw new Error('fetch failed');
+      return r.json();
+    }
+
+    async function loadTwoAlbums() {
+      const [a, b] = await Promise.all([fetchRandom(), fetchRandom()]);
+      // Ensure different albums (retry once if same)
+      if (a.artist === b.artist && a.album === b.album) {
+        const c = await fetchRandom();
+        return [a, c];
+      }
+      return [a, b];
+    }
+
+    // ── Progress dots ─────────────────────────────────────────────────────────
+    function renderDots() {
+      $dots.innerHTML = '';
+      for (let i = 0; i < TOTAL_ROUNDS; i++) {
+        const d = document.createElement('div');
+        d.className = 'dot';
+        if (i < history.length) {
+          d.classList.add(history[i] === 'correct' ? 'done-correct' : 'done-wrong');
+        } else if (i === round) {
+          d.classList.add('current');
+        }
+        $dots.appendChild(d);
+      }
+    }
+
+    // ── Build a card's HTML ───────────────────────────────────────────────────
+    function buildCard(album, idx) {
+      const label = idx === 0 ? 'Album A' : 'Album B';
+      return `
+        <div class="card-label">${label}</div>
+        <div class="card-artist">${escHtml(album.artist)}</div>
+        <div class="card-album">${escHtml(album.album)}</div>
+        <div class="card-year">${album.year || '—'}</div>
+        <span class="card-badge" id="badge-${idx}"></span>
+        <div class="card-rating-wrap">
+          <div class="card-rating-inner" id="flip-${idx}">
+            <div class="card-rating-front">?</div>
+            <div class="card-rating-back">
+              <span class="rating-number">${album.rating}</span>
+              <span class="rating-slash">/</span>
+              <span class="rating-denom">10</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function escHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // ── Start a new round ─────────────────────────────────────────────────────
+    async function startRound() {
+      answered = false;
+      $error.classList.remove('visible');
+      $feedback.textContent = '';
+      $feedback.className = 'feedback-bar';
+      $btnNext.classList.remove('visible');
+      $hint.textContent = 'Quale album ha il rating Scaruffi più alto?';
+      $hint.style.opacity = '1';
+
+      $roundLabel.textContent = `Round ${round + 1} di ${TOTAL_ROUNDS}`;
+      $scoreDisp.textContent = `${correct} / ${round}`;
+      renderDots();
+
+      // Show loading skeletons
+      $cards.innerHTML = `
+        <div class="album-card disabled" id="card-0">
+          <div class="card-label">Album A</div>
+          <div class="skeleton" style="height:1.2rem;width:70%;margin-bottom:.6rem"></div>
+          <div class="skeleton" style="height:.9rem;width:55%"></div>
+          <div class="skeleton" style="height:.8rem;width:35%;margin-top:.3rem"></div>
+          <div class="card-rating-wrap"><div class="card-rating-inner"><div class="card-rating-front">…</div><div class="card-rating-back"></div></div></div>
+        </div>
+        <div class="album-card disabled" id="card-1">
+          <div class="card-label">Album B</div>
+          <div class="skeleton" style="height:1.2rem;width:70%;margin-bottom:.6rem"></div>
+          <div class="skeleton" style="height:.9rem;width:55%"></div>
+          <div class="skeleton" style="height:.8rem;width:35%;margin-top:.3rem"></div>
+          <div class="card-rating-wrap"><div class="card-rating-inner"><div class="card-rating-front">…</div><div class="card-rating-back"></div></div></div>
+        </div>
+      `;
+
+      try {
+        albums = await loadTwoAlbums();
+      } catch (e) {
+        $error.classList.add('visible');
+        return;
+      }
+
+      // Render real cards
+      $cards.innerHTML = `
+        <div class="album-card" id="card-0" data-idx="0">${buildCard(albums[0], 0)}</div>
+        <div class="album-card" id="card-1" data-idx="1">${buildCard(albums[1], 1)}</div>
+      `;
+
+      // Attach click handlers
+      document.getElementById('card-0').addEventListener('click', () => pick(0));
+      document.getElementById('card-1').addEventListener('click', () => pick(1));
+    }
+
+    // ── Handle pick ───────────────────────────────────────────────────────────
+    function pick(chosenIdx) {
+      if (answered) return;
+      answered = true;
+
+      const ratings = [albums[0].rating, albums[1].rating];
+      const maxRating = Math.max(...ratings);
+      // If tie → picking either is correct
+      const isTie = ratings[0] === ratings[1];
+      const isCorrect = isTie || ratings[chosenIdx] === maxRating;
+
+      if (isCorrect) {
+        correct++;
+        history.push('correct');
+        $feedback.textContent = isTie ? 'PARI! Entrambi corretti.' : 'GIUSTO!';
+        $feedback.className = 'feedback-bar correct';
+      } else {
+        history.push('wrong');
+        $feedback.textContent = 'SBAGLIATO!';
+        $feedback.className = 'feedback-bar wrong';
+      }
+
+      // Disable cards
+      document.getElementById('card-0').classList.add('disabled');
+      document.getElementById('card-1').classList.add('disabled');
+
+      // Mark chosen card
+      document.getElementById(`card-${chosenIdx}`).classList.add('selected');
+
+      // Reveal ratings with flip animation (stagger)
+      setTimeout(() => revealCard(0, isCorrect, chosenIdx), 0);
+      setTimeout(() => revealCard(1, isCorrect, chosenIdx), 120);
+
+      // Score update
+      round++;
+      $scoreDisp.textContent = `${correct} / ${round}`;
+      renderDots();
+      $hint.textContent = '';
+
+      if (round >= TOTAL_ROUNDS) {
+        setTimeout(() => $btnNext.textContent = 'Risultati finali →', 100);
+      }
+      setTimeout(() => $btnNext.classList.add('visible'), 500);
+    }
+
+    function revealCard(idx, pickedCorrect, chosenIdx) {
+      const card = document.getElementById(`card-${idx}`);
+      const flip = document.getElementById(`flip-${idx}`);
+      const badge = document.getElementById(`badge-${idx}`);
+      const ratings = [albums[0].rating, albums[1].rating];
+      const maxRating = Math.max(...ratings);
+      const isTie = ratings[0] === ratings[1];
+
+      flip.classList.add('flipped');
+      card.classList.add('revealed');
+
+      // Determine card state
+      if (idx === chosenIdx) {
+        // Chosen card
+        if (pickedCorrect) {
+          card.classList.add('correct');
+          badge.textContent = '✓';
+        } else {
+          card.classList.add('wrong');
+          badge.textContent = '✗';
+        }
+      } else {
+        // Unchosen card
+        if (!pickedCorrect && (isTie || ratings[idx] === maxRating)) {
+          // This was the correct answer
+          card.classList.add('correct');
+          badge.textContent = '✓';
+        } else if (pickedCorrect && !isTie) {
+          card.classList.add('neutral');
+        }
+      }
+    }
+
+    // ── Next button ───────────────────────────────────────────────────────────
+    $btnNext.addEventListener('click', () => {
+      if (round >= TOTAL_ROUNDS) {
+        showFinal();
+      } else {
+        startRound();
+      }
+    });
+
+    // ── Final screen ──────────────────────────────────────────────────────────
+    function showFinal() {
+      $game.style.display = 'none';
+      $final.classList.add('visible');
+      $finalNum.textContent = correct;
+
+      let comment;
+      if (correct === 10) {
+        comment = '«Sei quasi all\'altezza della mia conoscenza musicale.»';
+      } else if (correct >= 7) {
+        comment = '«Discreto. Hai ascoltato più di 3 album nella tua vita.»';
+      } else if (correct >= 4) {
+        comment = '«Mediocre. Come i Beatles.»';
+      } else {
+        comment = '«Hai i gusti musicali di un televisore acceso.»';
+      }
+
+      $finalCmt.innerHTML = `${escHtml(comment)}<cite>— Piero Scaruffi</cite>`;
+    }
+
+    function restartQuiz() {
+      round = 0;
+      correct = 0;
+      history = [];
+      answered = false;
+      $game.style.display = '';
+      $final.classList.remove('visible');
+      startRound();
+    }
+    window.restartQuiz = restartQuiz;
+
+    // ── Nav toggle (same as index.html) ──────────────────────────────────────
+    const navToggle = document.getElementById('nav-toggle');
+    if (navToggle) {
+      navToggle.addEventListener('click', () => {
+        const nav = document.getElementById('main-nav');
+        const expanded = navToggle.getAttribute('aria-expanded') === 'true';
+        navToggle.setAttribute('aria-expanded', String(!expanded));
+        nav.classList.toggle('open', !expanded);
+      });
+    }
+
+    // ── Start! ────────────────────────────────────────────────────────────────
+    startRound();
+  })();
+  </script>
+</body>
+</html>
