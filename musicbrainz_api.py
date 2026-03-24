@@ -223,20 +223,22 @@ def get_top_singles_for_artist(artist_name, around_year=None, limit=50):
         date = rg.get("first-release-date", "")
         year = _parse_year(date)
 
-        # Optional year filter
-        if around_year and year and abs(year - around_year) > 3:
+        # Strict year filter: ±2 years from album year to avoid other artists
+        # with the same name (e.g. Belgian "Placebo" vs UK "Placebo")
+        if around_year and year and abs(year - around_year) > 2:
             continue
 
+        score = int(rg.get("score", 0))
         singles.append({
             "title": title,
-            "date": date,
-            "year": year,
-            "id": rg.get("id", ""),
+            "date":  date,
+            "year":  year,
+            "id":    rg.get("id", ""),
+            "score": score,
         })
 
-    # Rank: earlier release date = more prominent (for classic albums)
-    # Use release count as secondary proxy where available
-    singles.sort(key=lambda x: x.get("date") or "9999")
+    # Rank by MusicBrainz relevance score desc (proxy for prominence/popularity)
+    singles.sort(key=lambda x: x.get("score", 0), reverse=True)
 
     db.set_mb_cache(cache_key, json.dumps(singles))
     return singles
