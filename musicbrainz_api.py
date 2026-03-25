@@ -155,36 +155,57 @@ def find_recording(title, artist=None):
     return results
 
 
+def _fuzzy_match(a, b, threshold=0.82):
+    """True if two strings are similar enough (case-insensitive)."""
+    return SequenceMatcher(None, a.lower().strip(), b.lower().strip()).ratio() >= threshold
+
+
 def is_track_a_single(recording_title, artist_name):
     """
     Returns (is_single: bool, singles: list).
-    is_single is True if the track was released as a standalone single.
-    singles is the list of single release-groups found.
+    Passaggio 1: cerca release-group di tipo Single con quel titolo (più affidabile).
+    Passaggio 2: fallback via recording endpoint (cover le edizioni non standard).
     """
-    cache_key = f"single:{recording_title.lower()}|{artist_name.lower()}"
+    cache_key = f"single3:{recording_title.lower()}|{artist_name.lower()}"
     cached = db.get_mb_cache(cache_key)
     if cached:
         d = json.loads(cached)
         return d["is_single"], d["singles"]
 
-    q = f'recording:"{_esc(recording_title)}" AND artist:"{_esc(artist_name)}"'
-    data = _get("recording", {"query": q, "limit": 5,
-                               "inc": "releases+release-groups"})
-
     singles = []
+
+    # -- Passaggio 1: release-group endpoint (titolo singolo = titolo brano) --
+    q = f'releasegroup:"{_esc(recording_title)}" AND artist:"{_esc(artist_name)}" AND primarytype:Single'
+    data = _get("release-group", {"query": q, "limit": 10})
     if data:
-        for rec in data.get("recordings", []):
-            for rel in rec.get("releases", []):
-                rg = rel.get("release-group", {})
-                if rg.get("primary-type") == "Single":
+        for rg in data.get("release-groups", []):
+            if rg.get("primary-type") == "Single":
+                title = rg.get("title", "")
+                if _fuzzy_match(title, recording_title):
                     singles.append({
-                        "title": rel.get("title", ""),
-                        "date": rel.get("date", ""),
-                        "id": rel.get("id", ""),
+                        "title": title,
+                        "date":  rg.get("first-release-date", ""),
+                        "id":    rg.get("id", ""),
                     })
 
-    # Deduplicate by title
-    seen_titles = set()
+    # -- Passaggio 2: fallback via recording + release-group annesso ----------
+    if not singles:
+        q2 = f'recording:"{_esc(recording_title)}" AND artist:"{_esc(artist_name)}"'
+        data2 = _get("recording", {"query": q2, "limit": 5,
+                                    "inc": "releases+release-groups"})
+        if data2:
+            for rec in data2.get("recordings", []):
+                for rel in rec.get("releases", []):
+                    rg = rel.get("release-group", {})
+                    if rg.get("primary-type") == "Single":
+                        singles.append({
+                            "title": rel.get("title", ""),
+                            "date":  rel.get("date", ""),
+                            "id":    rel.get("id", ""),
+                        })
+
+    # Deduplica per titolo
+    seen_titles: set = set()
     deduped = []
     for s in singles:
         t = s["title"].lower()
